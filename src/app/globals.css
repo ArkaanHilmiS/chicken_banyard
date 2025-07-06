@@ -1,3 +1,43 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+/* Custom Font Family */
+body {
+  @apply font-sans bg-gray-50 text-gray-800;
+}
+
+/* Scrollbar Style (optional, bisa dihapus kalau tidak suka) */
+::-webkit-scrollbar {
+  width: 8px;
+  background: #f3f4f6;
+}
+::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 8px;
+}
+
+/* Default link style */
+a {
+  @apply text-blue-600 hover:underline transition;
+}
+
+/* Button: agar default tidak jelek jika lupa styling */
+button {
+  @apply focus:outline-none;
+}
+
+/* Input: style default */
+input, select, textarea {
+  @apply border border-gray-300 rounded-md px-3 py-2 focus:border-blue-500 focus:ring focus:ring-blue-100 transition;
+}
+
+/* Headings for better contrast */
+h1, h2, h3, h4, h5, h6 {
+  @apply font-bold text-gray-900;
+}
+
+/* Utility: Card container */
+.card {
+  @apply bg-white rounded-xl shadow p-4;
+}

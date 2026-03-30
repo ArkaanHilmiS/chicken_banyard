@@ -1,10 +1,7 @@
 import React from 'react';
 
-// 1. Warisi (extends) semua tipe atribut standar dari React untuk elemen <input>
-interface InputProps extends React.InputHTMLAttributes<HTMLInputElement> {
-  // Anda tetap bisa menambahkan props kustom di sini jika suatu saat dibutuhkan
-  // contoh: errorState?: boolean;
-}
+// Gunakan type alias agar seluruh atribut standar elemen <input> otomatis tersedia
+type InputProps = React.InputHTMLAttributes<HTMLInputElement>;
 
 // Gunakan ...props untuk menangkap semua atribut yang diwarisi
 const Input: React.FC<InputProps> = ({ className = "", ...props }) => (

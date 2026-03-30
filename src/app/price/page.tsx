@@ -18,26 +18,30 @@ export default function PricePage() {
   }, []);
 
   return (
-    <div className="p-6">
-      <h1 className="text-2xl font-bold mb-4">Harga Telur</h1>
-      <button className="px-3 py-2 mb-4 bg-blue-500 text-white rounded">+ Tambah Harga</button>
+    <div className="mx-auto max-w-6xl rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+      <div className="mb-4 flex items-center justify-between gap-3">
+        <h1 className="text-xl font-semibold text-slate-900">Pricing Table</h1>
+        <button className="rounded-md bg-teal-700 px-3 py-2 text-sm font-medium text-white hover:bg-teal-800">+ Tambah Harga</button>
+      </div>
       {loading ? <Loader /> : (
-        <table className="w-full border text-sm">
-          <thead>
-            <tr className="bg-gray-100">
-              <th className="p-2">Tanggal</th>
-              <th>Harga/Kg</th>
-            </tr>
-          </thead>
-          <tbody>
-            {prices.map(p => (
-              <tr key={p.id}>
-                <td className="p-2">{p.price_date}</td>
-                <td>{p.price_per_kg}</td>
+        <div className="overflow-x-auto">
+          <table className="w-full text-sm">
+            <thead className="border-y border-slate-200 bg-slate-50 text-left text-slate-600">
+              <tr>
+                <th className="p-3">Tanggal</th>
+                <th className="p-3">Harga / Kg</th>
               </tr>
-            ))}
-          </tbody>
-        </table>
+            </thead>
+            <tbody className="text-slate-700">
+              {prices.map((p) => (
+                <tr key={p.id} className="border-b border-slate-100">
+                  <td className="p-3">{p.price_date}</td>
+                  <td className="p-3 font-medium">{p.price_per_kg}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
       )}
     </div>
   );

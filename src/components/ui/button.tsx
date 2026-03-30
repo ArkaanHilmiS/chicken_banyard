@@ -12,12 +12,14 @@ const Button: React.FC<ButtonProps> = ({
   children,
   onClick,
   type = "button",
+  disabled = false,
   className = "",
 }) => (
   <button
     type={type}
     onClick={onClick}
-    className={`px-4 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600 ${className}`}
+    disabled={disabled}
+    className={`rounded-md bg-teal-700 px-4 py-2 text-white transition hover:bg-teal-800 disabled:cursor-not-allowed disabled:opacity-60 ${className}`}
   >
     {children}
   </button>

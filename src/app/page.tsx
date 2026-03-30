@@ -2,78 +2,69 @@
 import Link from "next/link";
 
 export default function Home() {
+  const modules = [
+    {
+      href: "/order",
+      title: "Sales Order",
+      description: "Buat pesanan telur, atur metode layanan, dan monitor status delivery.",
+    },
+    {
+      href: "/payment",
+      title: "Payment",
+      description: "Pantau pembayaran QRIS/cash, validasi bukti transfer, dan rekonsiliasi.",
+    },
+    {
+      href: "/stock",
+      title: "Inventory",
+      description: "Kontrol stok masuk-keluar harian agar supply tetap stabil.",
+    },
+    {
+      href: "/journal",
+      title: "Journal",
+      description: "Pencatatan transaksi akuntansi untuk laba, biaya, dan arus kas.",
+    },
+    {
+      href: "/price",
+      title: "Pricing",
+      description: "Kelola harga per kg berdasarkan dinamika pasar dan periode panen.",
+    },
+    {
+      href: "/report",
+      title: "Report",
+      description: "Laporan operasional dan performa bisnis untuk keputusan cepat.",
+    },
+  ];
+
   return (
-    <main className="max-w-xl mx-auto p-6 space-y-8">
-      <div className="mb-8 text-center">
-        <h1 className="text-3xl font-bold mb-2 text-blue-600">
-          Chicken Banyard – Penjualan Telur
-        </h1>
-        <p className="text-gray-700">
-          Sistem pemesanan, pembayaran, & manajemen penjualan telur otomatis untuk UMKM/peternak.
+    <div className="mx-auto max-w-6xl space-y-6">
+      <section className="overflow-hidden rounded-3xl border border-slate-200 bg-slate-950 p-6 text-white shadow-xl sm:p-8">
+        <p className="text-xs uppercase tracking-[0.2em] text-emerald-300">Integrated ERP</p>
+        <h1 className="mt-3 text-3xl font-semibold sm:text-4xl">Chicken Banyard Control Tower</h1>
+        <p className="mt-3 max-w-3xl text-sm text-slate-200 sm:text-base">
+          Satu sistem untuk order, payment, stok, pricing, jurnal, dan report. Semua proses operasional peternakan telur terhubung dalam alur kerja yang konsisten.
         </p>
-      </div>
-
-      <section className="space-y-4">
-        <h2 className="text-xl font-semibold mb-2">Menu Utama</h2>
-        <ul className="grid gap-2">
-          <li>
-            <Link
-              href="/order"
-              className="block p-3 bg-blue-50 rounded-md hover:bg-blue-100 font-medium text-blue-800"
-            >
-              Buat Pesanan
-            </Link>
-          </li>
-          <li>
-            <Link
-              href="/login"
-              className="block p-3 bg-blue-50 rounded-md hover:bg-blue-100 font-medium text-blue-800"
-            >
-              Login / Dashboard
-            </Link>
-          </li>
-          <li>
-            <Link
-              href="/register"
-              className="block p-3 bg-green-50 rounded-md hover:bg-green-100 font-medium text-green-800"
-            >
-              Daftar User Baru
-            </Link>
-          </li>
-          <li>
-            <Link
-              href="/price"
-              className="block p-3 bg-yellow-50 rounded-md hover:bg-yellow-100 font-medium text-yellow-800"
-            >
-              Lihat Daftar Harga Telur
-            </Link>
-          </li>
-          <li>
-            <Link
-              href="/report"
-              className="block p-3 bg-indigo-50 rounded-md hover:bg-indigo-100 font-medium text-indigo-800"
-            >
-              Laporan Keuangan (Admin)
-            </Link>
-          </li>
-          <li>
-            <Link
-              href="/stock"
-              className="block p-3 bg-pink-50 rounded-md hover:bg-pink-100 font-medium text-pink-800"
-            >
-              Manajemen Stok Telur
-            </Link>
-          </li>
-        </ul>
+        <div className="mt-6 flex flex-wrap gap-3">
+          <Link href="/dashboard" className="rounded-xl bg-emerald-500 px-4 py-2 text-sm font-semibold text-slate-950 hover:bg-emerald-400">
+            Buka Dashboard
+          </Link>
+          <Link href="/order" className="rounded-xl border border-slate-500 px-4 py-2 text-sm font-semibold hover:border-slate-300">
+            Buat Sales Order
+          </Link>
+        </div>
       </section>
 
-      <section>
-        <h2 className="text-lg font-semibold">Tentang Aplikasi</h2>
-        <p className="text-gray-600 text-sm">
-          Fitur: Order telur, pembayaran QRIS/cash, dashboard keuangan, pengumuman, notifikasi WA, ekspor laporan Excel, dan banyak lagi.<br />
-          Silakan login untuk akses fitur admin & pencatatan jurnal otomatis.
-        </p>
+      <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+        {modules.map((module) => (
+          <Link
+            key={module.href}
+            href={module.href}
+            className="group rounded-2xl border border-slate-200 bg-white p-5 shadow-sm transition hover:-translate-y-0.5 hover:border-emerald-500 hover:shadow-md"
+          >
+            <h2 className="text-lg font-semibold text-slate-900 transition group-hover:text-emerald-700">{module.title}</h2>
+            <p className="mt-2 text-sm text-slate-600">{module.description}</p>
+          </Link>
+        ))}
       </section>
-    </main>
+    </div>
   );
 }

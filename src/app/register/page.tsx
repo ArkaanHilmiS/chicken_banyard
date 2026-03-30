@@ -17,7 +17,7 @@ export default function RegisterPage() {
     setLoading(true);
 
     // signup via supabase
-    const { data, error } = await supabase.auth.signUp({
+    const { error } = await supabase.auth.signUp({
       email,
       password,
       options: {
@@ -34,13 +34,17 @@ export default function RegisterPage() {
   };
 
   return (
-    <form onSubmit={handleRegister} className="space-y-4">
-      <Input type="text" placeholder="Username" value={username} onChange={e => setUsername(e.target.value)} />
-      <Input type="email" placeholder="Email" value={email} onChange={e => setEmail(e.target.value)} />
-      <Input type="password" placeholder="Password" value={password} onChange={e => setPassword(e.target.value)} />
-      <Input type="text" placeholder="No. WhatsApp" value={wa} onChange={e => setWa(e.target.value)} />
-      <Button type="submit" disabled={loading}>{loading ? "Loading..." : "Register"}</Button>
-      {msg && <p>{msg}</p>}
-    </form>
+    <div className="mx-auto max-w-md rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+      <h1 className="text-xl font-semibold text-slate-900">Register User</h1>
+      <p className="mt-1 text-sm text-slate-600">Buat akun baru untuk akses dashboard ERP.</p>
+      <form onSubmit={handleRegister} className="mt-5 space-y-4">
+        <Input type="text" placeholder="Username" value={username} onChange={e => setUsername(e.target.value)} className="w-full" />
+        <Input type="email" placeholder="Email" value={email} onChange={e => setEmail(e.target.value)} className="w-full" />
+        <Input type="password" placeholder="Password" value={password} onChange={e => setPassword(e.target.value)} className="w-full" />
+        <Input type="text" placeholder="No. WhatsApp" value={wa} onChange={e => setWa(e.target.value)} className="w-full" />
+        <Button type="submit" disabled={loading} className="w-full">{loading ? "Loading..." : "Register"}</Button>
+        {msg && <p className="text-sm text-slate-700">{msg}</p>}
+      </form>
+    </div>
   );
 }

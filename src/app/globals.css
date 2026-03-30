@@ -2,42 +2,55 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Custom Font Family */
-body {
-  @apply font-sans bg-gray-50 text-gray-800;
+:root {
+  --bg-main: #f6f8f5;
+  --bg-soft: #e8eee6;
+  --ink: #0f172a;
+  --muted: #475569;
+  --brand: #0f766e;
+  --brand-strong: #115e59;
 }
 
-/* Scrollbar Style (optional, bisa dihapus kalau tidak suka) */
+html,
+body {
+  min-height: 100%;
+}
+
+.erp-body {
+  color: var(--ink);
+  background:
+    radial-gradient(circle at 10% 10%, #d7e8df 0%, transparent 32%),
+    radial-gradient(circle at 88% 16%, #dce5ec 0%, transparent 30%),
+    linear-gradient(165deg, var(--bg-main), var(--bg-soft));
+}
+
 ::-webkit-scrollbar {
   width: 8px;
-  background: #f3f4f6;
+  background: #edf2ef;
 }
+
 ::-webkit-scrollbar-thumb {
-  background: #cbd5e1;
+  background: #b5c5ba;
   border-radius: 8px;
 }
 
-/* Default link style */
 a {
-  @apply text-blue-600 hover:underline transition;
+  @apply transition;
 }
 
-/* Button: agar default tidak jelek jika lupa styling */
 button {
   @apply focus:outline-none;
 }
 
-/* Input: style default */
 input, select, textarea {
-  @apply border border-gray-300 rounded-md px-3 py-2 focus:border-blue-500 focus:ring focus:ring-blue-100 transition;
+  @apply rounded-md border border-slate-300 bg-white px-3 py-2 transition;
+  @apply focus:border-teal-700 focus:ring focus:ring-teal-100;
 }
 
-/* Headings for better contrast */
 h1, h2, h3, h4, h5, h6 {
-  @apply font-bold text-gray-900;
+  @apply font-semibold text-slate-900;
 }
 
-/* Utility: Card container */
 .card {
-  @apply bg-white rounded-xl shadow p-4;
+  @apply rounded-2xl border border-slate-200 bg-white p-4 shadow-sm;
 }

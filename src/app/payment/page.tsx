@@ -85,13 +85,13 @@ export default function PaymentPage() {
             <Input type="number" min={1} value={amount} onChange={(e) => setAmount(e.target.value)} placeholder="Nominal" className="w-full" required />
           </div>
 
-          <div className="flex items-center justify-between gap-3 mt-3">
+          <div className="flex items-center justify-between gap-3">
             <Button type="submit">+ Tambah Payment</Button>
             {msg && <p className="text-sm text-emerald-700">{msg}</p>}
           </div>
         </form>
 
-        <div className="grid gap-3 sm:grid-cols-2">
+        <div className="grid gap-3 sm:grid-cols-2 mt-4">
           <div className="rounded-xl border border-emerald-200 bg-emerald-50 p-3">
             <p className="text-xs uppercase tracking-wide text-emerald-700">Cash In</p>
             <p className="mt-1 text-xl font-semibold text-emerald-900">{incomingCount} transaksi</p>

@@ -1,10 +1,9 @@
 "use client";
 import { useState } from "react";
-import { createOrder } from "@/services/orderService";
 import Input from "@/components/ui/input";
 import Select from "@/components/ui/select";
 import Button from "@/components/ui/button";
-import type { Order } from "@/types/order";
+import { useOfflineStore } from "@/lib/offlineStore";
 
 // Opsi dropdown sesuai enum pada database
 const serviceMethods = [
@@ -13,7 +12,7 @@ const serviceMethods = [
 ];
 
 export default function OrderPage() {
-  // Gunakan union type agar kompatibel dengan Order['service_method']
+  const addOrder = useOfflineStore((state) => state.addOrder);
   const [qty, setQty] = useState("");
   const [serviceMethod, setServiceMethod] = useState<"antar" | "ambil" | "">("");
   const [address, setAddress] = useState("");
@@ -26,14 +25,15 @@ export default function OrderPage() {
       setMsg("Semua field wajib diisi");
       return;
     }
-    // Kirim ke service
-    const { error } = await createOrder({
-      user_id: "user_id_dummy", // Ganti dengan user id yang benar
-      quantity_kg: Number(qty),
-      service_method: serviceMethod as Order["service_method"], // type-safe
+    addOrder({
+      quantityKg: Number(qty),
+      serviceMethod,
       address,
     });
-    setMsg(error ? error.message : "Pesanan berhasil!");
+    setMsg("Pesanan berhasil disimpan sementara (offline).");
+    setQty("");
+    setServiceMethod("");
+    setAddress("");
   };
 
   return (

@@ -7,6 +7,8 @@ const menuItems = [
   { href: "/", label: "Overview" },
   { href: "/dashboard", label: "Dashboard" },
   { href: "/order", label: "Sales Order" },
+  { href: "/procurement", label: "Procurement" },
+  { href: "/goods-receipt", label: "Goods Receipt" },
   { href: "/payment", label: "Payment" },
   { href: "/stock", label: "Inventory" },
   { href: "/price", label: "Pricing" },
@@ -25,7 +27,7 @@ export default function Sidebar() {
       <div className="mb-7 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
         <p className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">ERP Suite</p>
         <h1 className="mt-2 text-2xl font-semibold text-slate-900">Chicken Banyard</h1>
-        <p className="mt-2 text-sm text-slate-600">Operasional penjualan telur terpusat dalam satu panel.</p>
+        <p className="mt-2 text-sm text-slate-600">Sales, purchasing, dan operasional farm dalam satu panel.</p>
       </div>
 
       <nav aria-label="Main navigation" className="space-y-1">

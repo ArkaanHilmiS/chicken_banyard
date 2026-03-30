@@ -1,23 +1,34 @@
 "use client";
-import { useState } from "react";
-import { supabase } from "@/utils/supabaseClient";
+import { useEffect, useState } from "react";
+import { useOfflineStore } from "@/lib/offlineStore";
 
 export default function ProfilePage() {
+  const updateCurrentProfile = useOfflineStore((state) => state.updateCurrentProfile);
+  const activeUser = useOfflineStore((state) =>
+    state.users.find((user) => user.id === state.currentUserId),
+  );
   const [username, setUsername] = useState("");
   const [whatsapp, setWhatsapp] = useState("");
   const [capitalAddress, setCapitalAddress] = useState("");
   const [message, setMessage] = useState("");
 
+  useEffect(() => {
+    if (activeUser) {
+      setUsername(activeUser.username || "");
+      setWhatsapp(activeUser.whatsapp_number || "");
+      setCapitalAddress(activeUser.capital_address || "");
+    }
+  }, [activeUser]);
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    // Update ke Supabase, implementasikan sesuai kebutuhan
-    const { error } = await supabase
-      .from("users")
-      .update({ username, whatsapp_number: whatsapp, capital_address: capitalAddress })
-      // TODO: tambahkan filter user_id dari context/auth
-      .eq("id", "YOUR_USER_ID");
-    if (error) setMessage(error.message);
-    else setMessage("Profile updated!");
+    const result = updateCurrentProfile({
+      username,
+      whatsappNumber: whatsapp,
+      capitalAddress,
+    });
+
+    setMessage(result.message);
   };
 
   return (

@@ -1,10 +1,11 @@
 "use client";
 import { useState } from "react";
-import { supabase } from "@/utils/supabaseClient";
 import Button from "@/components/ui/button";
 import Input from "@/components/ui/input";
+import { useOfflineStore } from "@/lib/offlineStore";
 
 export default function RegisterPage() {
+  const registerUser = useOfflineStore((state) => state.registerUser);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [wa, setWa] = useState("");
@@ -16,20 +17,14 @@ export default function RegisterPage() {
     e.preventDefault();
     setLoading(true);
 
-    // signup via supabase
-    const { error } = await supabase.auth.signUp({
+    const result = registerUser({
       email,
       password,
-      options: {
-        data: {
-          username,
-          whatsapp_number: wa,
-        },
-      },
+      username,
+      whatsappNumber: wa,
     });
 
-    if (error) setMsg(error.message);
-    else setMsg("Cek email untuk verifikasi!");
+    setMsg(result.message);
     setLoading(false);
   };
 

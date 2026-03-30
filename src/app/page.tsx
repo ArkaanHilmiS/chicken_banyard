@@ -11,7 +11,17 @@ export default function Home() {
     {
       href: "/payment",
       title: "Payment",
-      description: "Pantau pembayaran QRIS/cash, validasi bukti transfer, dan rekonsiliasi.",
+      description: "Pantau cash in dari sales dan cash out untuk biaya operasional.",
+    },
+    {
+      href: "/procurement",
+      title: "Procurement",
+      description: "Kelola pembelian listrik, air, pakan, ayam baru, dan kebutuhan farm.",
+    },
+    {
+      href: "/goods-receipt",
+      title: "Goods Receipt",
+      description: "Validasi barang diterima dari vendor sebelum masuk ke inventory.",
     },
     {
       href: "/stock",
@@ -39,9 +49,9 @@ export default function Home() {
     <div className="mx-auto max-w-6xl space-y-6">
       <section className="overflow-hidden rounded-3xl border border-slate-200 bg-slate-950 p-6 text-white shadow-xl sm:p-8">
         <p className="text-xs uppercase tracking-[0.2em] text-emerald-300">Integrated ERP</p>
-        <h1 className="mt-3 text-3xl font-semibold sm:text-4xl">Chicken Banyard Control Tower</h1>
+        <h1 className="mt-3 text-3xl font-semibold sm:text-4xl text-emerald-400">Chicken Banyard Control Tower</h1>
         <p className="mt-3 max-w-3xl text-sm text-slate-200 sm:text-base">
-          Satu sistem untuk order, payment, stok, pricing, jurnal, dan report. Semua proses operasional peternakan telur terhubung dalam alur kerja yang konsisten.
+          Satu sistem untuk sales, purchasing, payment, goods receipt, inventory, dan jurnal. Semua proses operasional peternakan telur terhubung dalam alur kerja yang konsisten.
         </p>
         <div className="mt-6 flex flex-wrap gap-3">
           <Link href="/dashboard" className="rounded-xl bg-emerald-500 px-4 py-2 text-sm font-semibold text-slate-950 hover:bg-emerald-400">
@@ -49,6 +59,9 @@ export default function Home() {
           </Link>
           <Link href="/order" className="rounded-xl border border-slate-500 px-4 py-2 text-sm font-semibold hover:border-slate-300">
             Buat Sales Order
+          </Link>
+          <Link href="/procurement" className="rounded-xl border border-slate-500 px-4 py-2 text-sm font-semibold hover:border-slate-300">
+            Buat Pembelian
           </Link>
         </div>
       </section>

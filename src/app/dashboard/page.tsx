@@ -6,14 +6,15 @@ export default function DashboardPage() {
   const kpis = [
     { label: "Order Hari Ini", value: "24", delta: "+12%" },
     { label: "Pendapatan Harian", value: "Rp 8.450.000", delta: "+8%" },
-    { label: "Stok Tersedia", value: "1.420 kg", delta: "Aman" },
-    { label: "Piutang Pending", value: "Rp 1.900.000", delta: "4 invoice" },
+    { label: "Biaya Operasional", value: "Rp 2.130.000", delta: "Listrik, air, pakan" },
+    { label: "Pembelian Pending", value: "Rp 1.900.000", delta: "3 PO" },
   ];
 
   const quickActions = [
     { href: "/order", label: "Input Sales Order Baru" },
-    { href: "/payment", label: "Verifikasi Pembayaran" },
-    { href: "/stock", label: "Update Stok Harian" },
+    { href: "/procurement", label: "Input Purchase Baru" },
+    { href: "/goods-receipt", label: "Catat Goods Receipt" },
+    { href: "/payment", label: "Catat Pembayaran Operasional" },
     { href: "/report", label: "Generate Laporan" },
   ];
 
@@ -31,14 +32,14 @@ export default function DashboardPage() {
 
       <section className="grid gap-4 xl:grid-cols-3">
         <article className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm xl:col-span-2">
-          <h2 className="text-lg font-semibold text-slate-900">Queue Operasional</h2>
+          <h2 className="text-lg font-semibold text-slate-900">Queue Operasional Harian</h2>
           <div className="mt-4 overflow-x-auto">
             <table className="min-w-full text-left text-sm">
               <thead className="text-slate-500">
                 <tr>
-                  <th className="py-2">No Order</th>
-                  <th className="py-2">Pelanggan</th>
-                  <th className="py-2">Layanan</th>
+                  <th className="py-2">Dokumen</th>
+                  <th className="py-2">Partner</th>
+                  <th className="py-2">Jenis</th>
                   <th className="py-2">Status</th>
                 </tr>
               </thead>
@@ -46,20 +47,20 @@ export default function DashboardPage() {
                 <tr className="border-t border-slate-100">
                   <td className="py-3">SO-240301</td>
                   <td className="py-3">Toko Kuning</td>
-                  <td className="py-3">Antar</td>
+                  <td className="py-3">Sales</td>
                   <td className="py-3"><span className="rounded-full bg-amber-100 px-2 py-1 text-xs font-semibold text-amber-800">Siap Kirim</span></td>
                 </tr>
                 <tr className="border-t border-slate-100">
-                  <td className="py-3">SO-240302</td>
-                  <td className="py-3">Warung Pak Budi</td>
-                  <td className="py-3">Ambil</td>
-                  <td className="py-3"><span className="rounded-full bg-emerald-100 px-2 py-1 text-xs font-semibold text-emerald-800">Lunas</span></td>
+                  <td className="py-3">PO-240115</td>
+                  <td className="py-3">PLN</td>
+                  <td className="py-3">Utility</td>
+                  <td className="py-3"><span className="rounded-full bg-slate-100 px-2 py-1 text-xs font-semibold text-slate-700">Menunggu Bayar</span></td>
                 </tr>
                 <tr className="border-t border-slate-100">
-                  <td className="py-3">SO-240303</td>
-                  <td className="py-3">Agen Sejahtera</td>
-                  <td className="py-3">Antar</td>
-                  <td className="py-3"><span className="rounded-full bg-slate-100 px-2 py-1 text-xs font-semibold text-slate-700">Menunggu Bayar</span></td>
+                  <td className="py-3">GR-240057</td>
+                  <td className="py-3">CV Pakan Jaya</td>
+                  <td className="py-3">Goods Receipt</td>
+                  <td className="py-3"><span className="rounded-full bg-emerald-100 px-2 py-1 text-xs font-semibold text-emerald-800">Posted ke Stok</span></td>
                 </tr>
               </tbody>
             </table>

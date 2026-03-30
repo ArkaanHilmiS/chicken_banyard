@@ -1,37 +1,59 @@
 "use client";
-import { useEffect, useState } from "react";
-import { supabase } from "@/utils/supabaseClient";
-import { Journal } from "@/types/journal";
-import Loader from "@/components/ui/loader";
+import { useOfflineStore } from "@/lib/offlineStore";
 
 export default function JournalPage() {
-  const [journals, setJournals] = useState<Journal[]>([]);
-  const [loading, setLoading] = useState(true);
+  const journals = useOfflineStore((state) => state.journals);
+  const addJournal = useOfflineStore((state) => state.addJournal);
 
-  useEffect(() => {
-    const fetchJournals = async () => {
-      const { data, error } = await supabase.from("journals").select("*").order("transaction_date", { ascending: false });
-      if (!error) setJournals(data || []);
-      setLoading(false);
-    };
-    fetchJournals();
-  }, []);
+  const operationalExpenseKeywords = ["listrik", "air", "pakan", "ayam", "operasional"];
+
+  const handleAddJournal = () => {
+    addJournal({
+      description: "Biaya pakan harian",
+      amount: 320000,
+      category: "beban",
+      type: "cash-out",
+    });
+  };
+
+  const expenseRows = journals.filter((j) => j.category === "beban");
+  const operationalRows = journals.filter((j) => {
+    const text = `${j.description} ${j.type}`.toLowerCase();
+    return operationalExpenseKeywords.some((keyword) => text.includes(keyword));
+  });
 
   return (
-    <div className="mx-auto max-w-6xl rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
-      <div className="mb-4 flex items-center justify-between gap-3">
-        <h1 className="text-xl font-semibold text-slate-900">Journal Ledger</h1>
-        <button className="rounded-md bg-teal-700 px-3 py-2 text-sm font-medium text-white hover:bg-teal-800">+ Tambah Jurnal</button>
-      </div>
-      {loading ? <Loader /> : (
+    <div className="mx-auto max-w-6xl space-y-4">
+      <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+        <div className="mb-4 flex items-center justify-between gap-3">
+          <div>
+            <h1 className="text-xl font-semibold text-slate-900">Journal Ledger</h1>
+            <p className="mt-1 text-sm text-slate-600">Pencatatan jurnal sementara berjalan di memory offline.</p>
+          </div>
+          <button onClick={handleAddJournal} className="rounded-md bg-teal-700 px-3 py-2 text-sm font-medium text-white hover:bg-teal-800">+ Tambah Jurnal</button>
+        </div>
+
+        <div className="grid gap-3 sm:grid-cols-2">
+          <div className="rounded-xl border border-slate-200 bg-slate-50 p-3">
+            <p className="text-xs uppercase tracking-wide text-slate-600">Total Beban</p>
+            <p className="mt-1 text-xl font-semibold text-slate-900">{expenseRows.length} entry</p>
+          </div>
+          <div className="rounded-xl border border-amber-200 bg-amber-50 p-3">
+            <p className="text-xs uppercase tracking-wide text-amber-700">Operasional Utility dan Feed</p>
+            <p className="mt-1 text-xl font-semibold text-amber-900">{operationalRows.length} entry</p>
+          </div>
+        </div>
+      </section>
+
+      <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
             <thead className="border-y border-slate-200 bg-slate-50 text-left text-slate-600">
               <tr>
                 <th className="p-3">Tanggal</th>
                 <th className="p-3">Deskripsi</th>
-                <th className="p-3">Type</th>
-                <th className="p-3">Kategori</th>
+                <th className="p-3">Jenis Arus</th>
+                <th className="p-3">Kategori Akun</th>
                 <th className="p-3">Nominal</th>
                 <th className="p-3">User</th>
               </tr>
@@ -50,7 +72,7 @@ export default function JournalPage() {
             </tbody>
           </table>
         </div>
-      )}
+      </section>
     </div>
   );
 }

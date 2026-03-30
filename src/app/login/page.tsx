@@ -1,18 +1,19 @@
 "use client";
 import { useState } from "react";
-import { supabase } from "@/utils/supabaseClient";
 import Input from "@/components/ui/input";
 import Button from "@/components/ui/button";
+import { useOfflineStore } from "@/lib/offlineStore";
 
 export default function LoginPage() {
+  const loginUser = useOfflineStore((state) => state.loginUser);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [msg, setMsg] = useState("");
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
-    const { error } = await supabase.auth.signInWithPassword({ email, password });
-    setMsg(error ? error.message : "Login berhasil!");
+    const result = loginUser({ email, password });
+    setMsg(result.message);
   };
 
   return (

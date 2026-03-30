@@ -1,31 +1,73 @@
 "use client";
 
+import { useState } from "react";
+import Button from "@/components/ui/button";
+import Input from "@/components/ui/input";
+import Select from "@/components/ui/select";
 import { useOfflineStore } from "@/lib/offlineStore";
+import type { GoodsReceipt } from "@/types/goodsReceipt";
 
 export default function GoodsReceiptPage() {
   const receipts = useOfflineStore((state) => state.goodsReceipts);
   const addGoodsReceipt = useOfflineStore((state) => state.addGoodsReceipt);
+  const [vendorName, setVendorName] = useState("");
+  const [itemName, setItemName] = useState("");
+  const [quantityReceived, setQuantityReceived] = useState("");
+  const [unit, setUnit] = useState("sak");
+  const [condition, setCondition] = useState<GoodsReceipt["condition"] | "">("");
+  const [msg, setMsg] = useState("");
 
-  const handleAddReceipt = () => {
+  const conditionOptions = [
+    { value: "good", label: "Good" },
+    { value: "partial", label: "Partial" },
+    { value: "damaged", label: "Damaged" },
+  ];
+
+  const handleAddReceipt = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!vendorName || !itemName || !quantityReceived || !unit || !condition) {
+      setMsg("Semua field wajib diisi.");
+      return;
+    }
+
     addGoodsReceipt({
-      vendorName: "CV Pakan Jaya",
-      itemName: "Pakan Layer",
-      quantityReceived: 5,
-      unit: "sak",
-      condition: "good",
+      vendorName,
+      itemName,
+      quantityReceived: Number(quantityReceived),
+      unit,
+      condition,
     });
+
+    setMsg("Goods receipt berhasil ditambahkan.");
+    setVendorName("");
+    setItemName("");
+    setQuantityReceived("");
+    setUnit("sak");
+    setCondition("");
   };
 
   return (
     <div className="mx-auto max-w-6xl space-y-4">
       <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
-        <div className="flex items-center justify-between gap-3">
+        <form onSubmit={handleAddReceipt} className="space-y-4">
           <div>
             <h1 className="text-xl font-semibold text-slate-900">Goods Receipt</h1>
             <p className="mt-1 text-sm text-slate-600">Penerimaan barang sementara mode offline (tanpa database).</p>
           </div>
-          <button onClick={handleAddReceipt} className="rounded-md bg-teal-700 px-3 py-2 text-sm font-medium text-white hover:bg-teal-800">+ Buat GRN</button>
-        </div>
+
+          <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
+            <Input value={vendorName} onChange={(e) => setVendorName(e.target.value)} placeholder="Vendor" className="w-full" required />
+            <Input value={itemName} onChange={(e) => setItemName(e.target.value)} placeholder="Item" className="w-full" required />
+            <Input type="number" min={1} value={quantityReceived} onChange={(e) => setQuantityReceived(e.target.value)} placeholder="Qty Diterima" className="w-full" required />
+            <Input value={unit} onChange={(e) => setUnit(e.target.value)} placeholder="Unit" className="w-full" required />
+            <Select options={conditionOptions} value={condition} onChange={(e) => setCondition(e.target.value as GoodsReceipt["condition"] | "")} required className="w-full" />
+          </div>
+
+          <div className="flex items-center justify-between gap-3">
+            <Button type="submit">+ Buat GRN</Button>
+            {msg && <p className="text-sm text-emerald-700">{msg}</p>}
+          </div>
+        </form>
       </section>
 
       <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">

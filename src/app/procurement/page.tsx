@@ -1,32 +1,80 @@
 "use client";
 
+import { useState } from "react";
+import Button from "@/components/ui/button";
+import Input from "@/components/ui/input";
+import Select from "@/components/ui/select";
 import { useOfflineStore } from "@/lib/offlineStore";
+import type { Purchase } from "@/types/purchase";
 
 export default function ProcurementPage() {
   const purchases = useOfflineStore((state) => state.purchases);
   const addPurchase = useOfflineStore((state) => state.addPurchase);
+  const [vendorName, setVendorName] = useState("");
+  const [itemName, setItemName] = useState("");
+  const [quantity, setQuantity] = useState("");
+  const [unit, setUnit] = useState("paket");
+  const [unitPrice, setUnitPrice] = useState("");
+  const [category, setCategory] = useState<Purchase["category"] | "">("");
+  const [msg, setMsg] = useState("");
 
-  const handleAddPurchase = () => {
+  const categoryOptions = [
+    { value: "utility", label: "Utility" },
+    { value: "feed", label: "Feed" },
+    { value: "livestock", label: "Livestock" },
+    { value: "operational", label: "Operational" },
+    { value: "asset", label: "Asset" },
+    { value: "other", label: "Other" },
+  ];
+
+  const handleAddPurchase = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!vendorName || !itemName || !quantity || !unit || !unitPrice || !category) {
+      setMsg("Semua field wajib diisi.");
+      return;
+    }
+
     addPurchase({
-      vendorName: "Vendor Operasional",
-      itemName: "Tagihan Air",
-      quantity: 1,
-      unit: "paket",
-      unitPrice: 450000,
-      category: "utility",
+      vendorName,
+      itemName,
+      quantity: Number(quantity),
+      unit,
+      unitPrice: Number(unitPrice),
+      category,
     });
+
+    setMsg("Data pembelian berhasil ditambahkan.");
+    setVendorName("");
+    setItemName("");
+    setQuantity("");
+    setUnit("paket");
+    setUnitPrice("");
+    setCategory("");
   };
 
   return (
     <div className="mx-auto max-w-6xl space-y-4">
       <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
-        <div className="flex items-center justify-between gap-3">
+        <form onSubmit={handleAddPurchase} className="space-y-4">
           <div>
             <h1 className="text-xl font-semibold text-slate-900">Procurement</h1>
             <p className="mt-1 text-sm text-slate-600">Kelola pembelian kebutuhan farm secara offline sementara (tanpa database).</p>
           </div>
-          <button onClick={handleAddPurchase} className="rounded-md bg-teal-700 px-3 py-2 text-sm font-medium text-white hover:bg-teal-800">+ Buat Purchase</button>
-        </div>
+
+          <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
+            <Input value={vendorName} onChange={(e) => setVendorName(e.target.value)} placeholder="Vendor" className="w-full" required />
+            <Input value={itemName} onChange={(e) => setItemName(e.target.value)} placeholder="Item" className="w-full" required />
+            <Input type="number" min={1} value={quantity} onChange={(e) => setQuantity(e.target.value)} placeholder="Qty" className="w-full" required />
+            <Input value={unit} onChange={(e) => setUnit(e.target.value)} placeholder="Unit (kg/sak/paket)" className="w-full" required />
+            <Input type="number" min={1} value={unitPrice} onChange={(e) => setUnitPrice(e.target.value)} placeholder="Unit Price" className="w-full" required />
+            <Select options={categoryOptions} value={category} onChange={(e) => setCategory(e.target.value as Purchase["category"] | "")} required className="w-full" />
+          </div>
+
+          <div className="flex items-center justify-between gap-3">
+            <Button type="submit">+ Buat Purchase</Button>
+            {msg && <p className="text-sm text-emerald-700">{msg}</p>}
+          </div>
+        </form>
       </section>
 
       <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">

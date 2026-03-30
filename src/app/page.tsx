@@ -24,6 +24,11 @@ export default function Home() {
       description: "Validasi barang diterima dari vendor sebelum masuk ke inventory.",
     },
     {
+      href: "/master-data",
+      title: "Master Data",
+      description: "Kelola customer, vendor, supplier, stakeholder, NPWP, rekening, dan preferensi transaksi.",
+    },
+    {
       href: "/stock",
       title: "Inventory",
       description: "Kontrol stok masuk-keluar harian agar supply tetap stabil.",
@@ -62,6 +67,9 @@ export default function Home() {
           </Link>
           <Link href="/procurement" className="rounded-xl border border-slate-500 px-4 py-2 text-sm font-semibold hover:border-slate-300">
             Buat Pembelian
+          </Link>
+          <Link href="/master-data" className="rounded-xl border border-slate-500 px-4 py-2 text-sm font-semibold hover:border-slate-300">
+            Kelola Master Data
           </Link>
         </div>
       </section>

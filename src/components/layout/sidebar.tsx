@@ -9,6 +9,7 @@ const menuItems = [
   { href: "/order", label: "Sales Order" },
   { href: "/procurement", label: "Procurement" },
   { href: "/goods-receipt", label: "Goods Receipt" },
+  { href: "/master-data", label: "Master Data" },
   { href: "/payment", label: "Payment" },
   { href: "/stock", label: "Inventory" },
   { href: "/price", label: "Pricing" },

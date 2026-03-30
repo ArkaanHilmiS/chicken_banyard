@@ -1,10 +1,20 @@
 "use client";
+import { useState } from "react";
+import Button from "@/components/ui/button";
+import Input from "@/components/ui/input";
+import Select from "@/components/ui/select";
 import { Payment } from "@/types/payment";
 import { useOfflineStore } from "@/lib/offlineStore";
 
 export default function PaymentPage() {
   const payments = useOfflineStore((state) => state.payments);
   const addPayment = useOfflineStore((state) => state.addPayment);
+  const [direction, setDirection] = useState<"incoming" | "outgoing" | "">("");
+  const [paymentFor, setPaymentFor] = useState<NonNullable<Payment["payment_for"]> | "">("");
+  const [vendorName, setVendorName] = useState("");
+  const [method, setMethod] = useState<Payment["payment_method"] | "">("");
+  const [amount, setAmount] = useState("");
+  const [msg, setMsg] = useState("");
 
   const getDirection = (payment: Payment) => {
     if (payment.payment_direction) return payment.payment_direction;
@@ -14,26 +24,72 @@ export default function PaymentPage() {
   const incomingCount = payments.filter((p) => getDirection(p) === "incoming").length;
   const outgoingCount = payments.filter((p) => getDirection(p) === "outgoing").length;
 
-  const handleAddPayment = () => {
+  const directionOptions = [
+    { value: "incoming", label: "Incoming" },
+    { value: "outgoing", label: "Outgoing" },
+  ];
+
+  const paymentForOptions = [
+    { value: "sales", label: "Sales" },
+    { value: "electricity", label: "Electricity" },
+    { value: "water", label: "Water" },
+    { value: "chicken_feed", label: "Chicken Feed" },
+    { value: "new_chicken", label: "New Chicken" },
+    { value: "operational", label: "Operational" },
+    { value: "asset", label: "Asset" },
+    { value: "other", label: "Other" },
+  ];
+
+  const methodOptions = [
+    { value: "cash", label: "Cash" },
+    { value: "qris", label: "QRIS" },
+  ];
+
+  const handleAddPayment = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!direction || !paymentFor || !method || !amount) {
+      setMsg("Semua field wajib diisi kecuali vendor/pelanggan.");
+      return;
+    }
+
     addPayment({
-      direction: "outgoing",
-      amount: 250000,
-      paymentFor: "water",
-      vendorName: "PDAM",
-      method: "cash",
+      direction,
+      amount: Number(amount),
+      paymentFor,
+      vendorName,
+      method,
     });
+
+    setMsg("Payment berhasil ditambahkan.");
+    setDirection("");
+    setPaymentFor("");
+    setVendorName("");
+    setMethod("");
+    setAmount("");
   };
 
   return (
     <div className="mx-auto max-w-6xl space-y-4">
       <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
-        <div className="mb-4 flex items-center justify-between gap-3">
+        <form onSubmit={handleAddPayment} className="space-y-4">
           <div>
             <h1 className="text-xl font-semibold text-slate-900">Cash In and Cash Out</h1>
             <p className="mt-1 text-sm text-slate-600">Data payment berjalan di memory offline sementara (tanpa database/storage).</p>
           </div>
-          <button onClick={handleAddPayment} className="rounded-md bg-teal-700 px-3 py-2 text-sm font-medium text-white hover:bg-teal-800">+ Tambah Payment</button>
-        </div>
+
+          <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
+            <Select options={directionOptions} value={direction} onChange={(e) => setDirection(e.target.value as "incoming" | "outgoing" | "")} required className="w-full" />
+            <Select options={paymentForOptions} value={paymentFor} onChange={(e) => setPaymentFor(e.target.value as NonNullable<Payment["payment_for"]> | "")} required className="w-full" />
+            <Input value={vendorName} onChange={(e) => setVendorName(e.target.value)} placeholder="Vendor / Pelanggan" className="w-full" />
+            <Select options={methodOptions} value={method} onChange={(e) => setMethod(e.target.value as Payment["payment_method"] | "")} required className="w-full" />
+            <Input type="number" min={1} value={amount} onChange={(e) => setAmount(e.target.value)} placeholder="Nominal" className="w-full" required />
+          </div>
+
+          <div className="flex items-center justify-between gap-3">
+            <Button type="submit">+ Tambah Payment</Button>
+            {msg && <p className="text-sm text-emerald-700">{msg}</p>}
+          </div>
+        </form>
 
         <div className="grid gap-3 sm:grid-cols-2">
           <div className="rounded-xl border border-emerald-200 bg-emerald-50 p-3">

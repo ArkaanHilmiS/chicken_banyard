@@ -14,6 +14,7 @@ export default function DashboardPage() {
     { href: "/order", label: "Input Sales Order Baru" },
     { href: "/procurement", label: "Input Purchase Baru" },
     { href: "/goods-receipt", label: "Catat Goods Receipt" },
+    { href: "/master-data", label: "Kelola Master Data Partner" },
     { href: "/payment", label: "Catat Pembayaran Operasional" },
     { href: "/report", label: "Generate Laporan" },
   ];

@@ -1,19 +1,55 @@
 "use client";
+import { useState } from "react";
+import Button from "@/components/ui/button";
+import Input from "@/components/ui/input";
+import Select from "@/components/ui/select";
 import { useOfflineStore } from "@/lib/offlineStore";
+import type { Journal } from "@/types/journal";
 
 export default function JournalPage() {
   const journals = useOfflineStore((state) => state.journals);
   const addJournal = useOfflineStore((state) => state.addJournal);
+  const [description, setDescription] = useState("");
+  const [amount, setAmount] = useState("");
+  const [category, setCategory] = useState<Journal["category"] | "">("");
+  const [type, setType] = useState("");
+  const [msg, setMsg] = useState("");
 
   const operationalExpenseKeywords = ["listrik", "air", "pakan", "ayam", "operasional"];
 
-  const handleAddJournal = () => {
+  const categoryOptions = [
+    { value: "pendapatan", label: "Pendapatan" },
+    { value: "beban", label: "Beban" },
+    { value: "aset", label: "Aset" },
+    { value: "liabilitas", label: "Liabilitas" },
+    { value: "modal", label: "Modal" },
+  ];
+
+  const typeOptions = [
+    { value: "cash-in", label: "Cash In" },
+    { value: "cash-out", label: "Cash Out" },
+    { value: "adjustment", label: "Adjustment" },
+  ];
+
+  const handleAddJournal = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!description || !amount || !category || !type) {
+      setMsg("Semua field wajib diisi.");
+      return;
+    }
+
     addJournal({
-      description: "Biaya pakan harian",
-      amount: 320000,
-      category: "beban",
-      type: "cash-out",
+      description,
+      amount: Number(amount),
+      category,
+      type,
     });
+
+    setMsg("Jurnal berhasil ditambahkan.");
+    setDescription("");
+    setAmount("");
+    setCategory("");
+    setType("");
   };
 
   const expenseRows = journals.filter((j) => j.category === "beban");
@@ -25,13 +61,24 @@ export default function JournalPage() {
   return (
     <div className="mx-auto max-w-6xl space-y-4">
       <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
-        <div className="mb-4 flex items-center justify-between gap-3">
+        <form onSubmit={handleAddJournal} className="space-y-4">
           <div>
             <h1 className="text-xl font-semibold text-slate-900">Journal Ledger</h1>
             <p className="mt-1 text-sm text-slate-600">Pencatatan jurnal sementara berjalan di memory offline.</p>
           </div>
-          <button onClick={handleAddJournal} className="rounded-md bg-teal-700 px-3 py-2 text-sm font-medium text-white hover:bg-teal-800">+ Tambah Jurnal</button>
-        </div>
+
+          <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
+            <Input value={description} onChange={(e) => setDescription(e.target.value)} placeholder="Deskripsi transaksi" className="w-full" required />
+            <Input type="number" min={1} value={amount} onChange={(e) => setAmount(e.target.value)} placeholder="Nominal" className="w-full" required />
+            <Select options={categoryOptions} value={category} onChange={(e) => setCategory(e.target.value as Journal["category"] | "")} required className="w-full" />
+            <Select options={typeOptions} value={type} onChange={(e) => setType(e.target.value)} required className="w-full" />
+          </div>
+
+          <div className="flex items-center justify-between gap-3">
+            <Button type="submit">+ Tambah Jurnal</Button>
+            {msg && <p className="text-sm text-emerald-700">{msg}</p>}
+          </div>
+        </form>
 
         <div className="grid gap-3 sm:grid-cols-2">
           <div className="rounded-xl border border-slate-200 bg-slate-50 p-3">

@@ -1,6 +1,7 @@
 import { create } from "zustand";
 import type { GoodsReceipt } from "@/types/goodsReceipt";
 import type { Journal } from "@/types/journal";
+import type { MasterParty } from "@/types/masterParty";
 import type { Order } from "@/types/order";
 import type { Payment } from "@/types/payment";
 import type { Price } from "@/types/price";
@@ -23,6 +24,7 @@ interface OfflineStoreState {
   prices: Price[];
   purchases: Purchase[];
   goodsReceipts: GoodsReceipt[];
+  masterParties: MasterParty[];
   users: AuthUser[];
   currentUserId?: string;
   addOrder: (input: { quantityKg: number; serviceMethod: "antar" | "ambil"; address: string }) => void;
@@ -32,6 +34,20 @@ interface OfflineStoreState {
   addJournal: (input: { description: string; amount: number; category: Journal["category"]; type: string }) => void;
   addStock: (input: { quantityKg: number; stockType: Stock["stock_type"]; orderId?: string }) => void;
   addPrice: (pricePerKg: number) => void;
+  addMasterParty: (input: {
+    partyType: MasterParty["party_type"];
+    name: string;
+    email?: string;
+    phone?: string;
+    address?: string;
+    npwp?: string;
+    bankName?: string;
+    bankAccountNumber?: string;
+    bankAccountName?: string;
+    preferredPaymentMethod?: "cash" | "qris";
+    preferredTransactionMethod?: "cash-in" | "cash-out" | "transfer" | "hybrid";
+    notes?: string;
+  }) => void;
   registerUser: (input: { email: string; password: string; username: string; whatsappNumber: string }) => { ok: boolean; message: string };
   loginUser: (input: { email: string; password: string }) => { ok: boolean; message: string };
   updateCurrentProfile: (input: { username: string; whatsappNumber: string; capitalAddress: string }) => { ok: boolean; message: string };
@@ -168,6 +184,35 @@ const seedGoodsReceipts: GoodsReceipt[] = [
   },
 ];
 
+const seedMasterParties: MasterParty[] = [
+  {
+    id: "MST-001",
+    party_type: "customer",
+    name: "Toko Kuning",
+    phone: "081300000001",
+    address: "Pasar Tengah",
+    preferred_payment_method: "cash",
+    preferred_transaction_method: "cash-in",
+    total_transaction_rp: 3720000,
+    transaction_count: 1,
+    created_at: nowIso(),
+  },
+  {
+    id: "MST-002",
+    party_type: "supplier",
+    name: "CV Pakan Jaya",
+    npwp: "01.234.567.8-901.000",
+    bank_name: "BCA",
+    bank_account_number: "1234567890",
+    bank_account_name: "CV Pakan Jaya",
+    preferred_payment_method: "qris",
+    preferred_transaction_method: "cash-out",
+    total_transaction_rp: 6750000,
+    transaction_count: 1,
+    created_at: nowIso(),
+  },
+];
+
 export const useOfflineStore = create<OfflineStoreState>((set, get) => ({
   orders: seedOrders,
   payments: seedPayments,
@@ -176,6 +221,7 @@ export const useOfflineStore = create<OfflineStoreState>((set, get) => ({
   prices: seedPrices,
   purchases: seedPurchases,
   goodsReceipts: seedGoodsReceipts,
+  masterParties: seedMasterParties,
   users: seedUsers,
   currentUserId: "USR-001",
 
@@ -311,6 +357,18 @@ export const useOfflineStore = create<OfflineStoreState>((set, get) => ({
     set((state) => ({
       payments: [newPayment, ...state.payments],
       journals: [newJournal, ...state.journals],
+      masterParties: state.masterParties.map((party) => {
+        if (!vendorName) return party;
+        if (party.name.toLowerCase() !== vendorName.toLowerCase()) return party;
+
+        return {
+          ...party,
+          total_transaction_rp: party.total_transaction_rp + amount,
+          transaction_count: party.transaction_count + 1,
+          preferred_payment_method: method,
+          preferred_transaction_method: direction === "incoming" ? "cash-in" : "cash-out",
+        };
+      }),
     }));
   },
 
@@ -351,6 +409,42 @@ export const useOfflineStore = create<OfflineStoreState>((set, get) => ({
     };
 
     set((state) => ({ prices: [newPrice, ...state.prices] }));
+  },
+
+  addMasterParty: ({
+    partyType,
+    name,
+    email,
+    phone,
+    address,
+    npwp,
+    bankName,
+    bankAccountNumber,
+    bankAccountName,
+    preferredPaymentMethod,
+    preferredTransactionMethod,
+    notes,
+  }) => {
+    const newParty: MasterParty = {
+      id: makeId("MST"),
+      party_type: partyType,
+      name,
+      email,
+      phone,
+      address,
+      npwp,
+      bank_name: bankName,
+      bank_account_number: bankAccountNumber,
+      bank_account_name: bankAccountName,
+      preferred_payment_method: preferredPaymentMethod,
+      preferred_transaction_method: preferredTransactionMethod,
+      total_transaction_rp: 0,
+      transaction_count: 0,
+      notes,
+      created_at: nowIso(),
+    };
+
+    set((state) => ({ masterParties: [newParty, ...state.masterParties] }));
   },
 
   registerUser: ({ email, password, username, whatsappNumber }) => {

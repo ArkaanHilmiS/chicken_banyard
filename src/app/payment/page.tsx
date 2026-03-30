@@ -85,7 +85,7 @@ export default function PaymentPage() {
             <Input type="number" min={1} value={amount} onChange={(e) => setAmount(e.target.value)} placeholder="Nominal" className="w-full" required />
           </div>
 
-          <div className="flex items-center justify-between gap-3">
+          <div className="flex items-center justify-between gap-3 mt-3">
             <Button type="submit">+ Tambah Payment</Button>
             {msg && <p className="text-sm text-emerald-700">{msg}</p>}
           </div>

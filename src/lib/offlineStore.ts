@@ -1,12 +1,15 @@
 import { create } from "zustand";
 import type { GoodsReceipt } from "@/types/goodsReceipt";
+import type { ItemMaster } from "@/types/itemMaster";
 import type { Journal } from "@/types/journal";
 import type { MasterParty } from "@/types/masterParty";
 import type { Order } from "@/types/order";
 import type { Payment } from "@/types/payment";
 import type { Price } from "@/types/price";
+import type { PriceMaster } from "@/types/priceMaster";
 import type { Purchase } from "@/types/purchase";
 import type { Stock } from "@/types/stock";
+import type { UnitOfMeasure } from "@/types/unitOfMeasure";
 import type { User } from "@/types/user";
 
 type AuthUser = User & { password: string };
@@ -25,6 +28,9 @@ interface OfflineStoreState {
   purchases: Purchase[];
   goodsReceipts: GoodsReceipt[];
   masterParties: MasterParty[];
+  itemMasters: ItemMaster[];
+  priceMasters: PriceMaster[];
+  unitOfMeasures: UnitOfMeasure[];
   users: AuthUser[];
   currentUserId?: string;
   addOrder: (input: { quantityKg: number; serviceMethod: "antar" | "ambil"; address: string }) => void;
@@ -34,6 +40,27 @@ interface OfflineStoreState {
   addJournal: (input: { description: string; amount: number; category: Journal["category"]; type: string }) => void;
   addStock: (input: { quantityKg: number; stockType: Stock["stock_type"]; orderId?: string }) => void;
   addPrice: (pricePerKg: number) => void;
+  addItemMaster: (input: {
+    sku: string;
+    name: string;
+    category: string;
+    defaultUom: string;
+    purchasePrice: number;
+    sellingPrice: number;
+    minStock: number;
+    description?: string;
+  }) => void;
+  addUnitOfMeasure: (input: { name: string; symbol: string; description?: string }) => void;
+  addPriceMaster: (input: {
+    itemId: string;
+    itemName: string;
+    uom: string;
+    priceType: PriceMaster["price_type"];
+    priceValue: number;
+    effectiveDate: string;
+    paymentMethod?: "cash" | "qris";
+    transactionMethod?: "cash-in" | "cash-out" | "transfer" | "hybrid";
+  }) => void;
   addMasterParty: (input: {
     partyType: MasterParty["party_type"];
     name: string;
@@ -213,6 +240,68 @@ const seedMasterParties: MasterParty[] = [
   },
 ];
 
+const seedUnitOfMeasures: UnitOfMeasure[] = [
+  { id: "UOM-001", name: "Kilogram", symbol: "kg", is_active: true, created_at: nowIso() },
+  { id: "UOM-002", name: "Sak", symbol: "sak", is_active: true, created_at: nowIso() },
+  { id: "UOM-003", name: "Paket", symbol: "paket", is_active: true, created_at: nowIso() },
+];
+
+const seedItemMasters: ItemMaster[] = [
+  {
+    id: "ITM-001",
+    sku: "TELUR-LAYER-001",
+    name: "Telur Layer Grade A",
+    category: "Produk Utama",
+    default_uom: "kg",
+    purchase_price: 28000,
+    selling_price: 31000,
+    min_stock: 500,
+    description: "Produk telur utama penjualan harian",
+    is_active: true,
+    created_at: nowIso(),
+  },
+  {
+    id: "ITM-002",
+    sku: "PAKAN-LAYER-001",
+    name: "Pakan Layer",
+    category: "Bahan Baku",
+    default_uom: "sak",
+    purchase_price: 270000,
+    selling_price: 0,
+    min_stock: 10,
+    description: "Pakan konsumsi ayam petelur",
+    is_active: true,
+    created_at: nowIso(),
+  },
+];
+
+const seedPriceMasters: PriceMaster[] = [
+  {
+    id: "PM-001",
+    item_id: "ITM-001",
+    item_name: "Telur Layer Grade A",
+    uom: "kg",
+    price_type: "selling",
+    price_value: 31000,
+    effective_date: today(),
+    payment_method: "cash",
+    transaction_method: "cash-in",
+    created_at: nowIso(),
+  },
+  {
+    id: "PM-002",
+    item_id: "ITM-002",
+    item_name: "Pakan Layer",
+    uom: "sak",
+    price_type: "purchase",
+    price_value: 270000,
+    effective_date: today(),
+    payment_method: "qris",
+    transaction_method: "cash-out",
+    created_at: nowIso(),
+  },
+];
+
 export const useOfflineStore = create<OfflineStoreState>((set, get) => ({
   orders: seedOrders,
   payments: seedPayments,
@@ -222,6 +311,9 @@ export const useOfflineStore = create<OfflineStoreState>((set, get) => ({
   purchases: seedPurchases,
   goodsReceipts: seedGoodsReceipts,
   masterParties: seedMasterParties,
+  itemMasters: seedItemMasters,
+  priceMasters: seedPriceMasters,
+  unitOfMeasures: seedUnitOfMeasures,
   users: seedUsers,
   currentUserId: "USR-001",
 
@@ -409,6 +501,54 @@ export const useOfflineStore = create<OfflineStoreState>((set, get) => ({
     };
 
     set((state) => ({ prices: [newPrice, ...state.prices] }));
+  },
+
+  addItemMaster: ({ sku, name, category, defaultUom, purchasePrice, sellingPrice, minStock, description }) => {
+    const newItem: ItemMaster = {
+      id: makeId("ITM"),
+      sku,
+      name,
+      category,
+      default_uom: defaultUom,
+      purchase_price: purchasePrice,
+      selling_price: sellingPrice,
+      min_stock: minStock,
+      description,
+      is_active: true,
+      created_at: nowIso(),
+    };
+
+    set((state) => ({ itemMasters: [newItem, ...state.itemMasters] }));
+  },
+
+  addUnitOfMeasure: ({ name, symbol, description }) => {
+    const newUom: UnitOfMeasure = {
+      id: makeId("UOM"),
+      name,
+      symbol,
+      description,
+      is_active: true,
+      created_at: nowIso(),
+    };
+
+    set((state) => ({ unitOfMeasures: [newUom, ...state.unitOfMeasures] }));
+  },
+
+  addPriceMaster: ({ itemId, itemName, uom, priceType, priceValue, effectiveDate, paymentMethod, transactionMethod }) => {
+    const newPriceMaster: PriceMaster = {
+      id: makeId("PM"),
+      item_id: itemId,
+      item_name: itemName,
+      uom,
+      price_type: priceType,
+      price_value: priceValue,
+      effective_date: effectiveDate,
+      payment_method: paymentMethod,
+      transaction_method: transactionMethod,
+      created_at: nowIso(),
+    };
+
+    set((state) => ({ priceMasters: [newPriceMaster, ...state.priceMasters] }));
   },
 
   addMasterParty: ({

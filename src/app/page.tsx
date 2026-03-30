@@ -29,6 +29,21 @@ export default function Home() {
       description: "Kelola customer, vendor, supplier, stakeholder, NPWP, rekening, dan preferensi transaksi.",
     },
     {
+      href: "/item-master",
+      title: "Item Master",
+      description: "Kelola SKU item, harga beli/jual default, kategori, dan minimum stock.",
+    },
+    {
+      href: "/price-master",
+      title: "Price Master",
+      description: "Kelola harga item per unit dan tipe harga (purchase, selling, wholesale, retail).",
+    },
+    {
+      href: "/uom-master",
+      title: "UoM Master",
+      description: "Kelola unit of measure seperti kg, sak, paket, liter, dan lainnya.",
+    },
+    {
       href: "/stock",
       title: "Inventory",
       description: "Kontrol stok masuk-keluar harian agar supply tetap stabil.",

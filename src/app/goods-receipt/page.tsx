@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import Button from "@/components/ui/button";
 import Input from "@/components/ui/input";
 import Select from "@/components/ui/select";
@@ -9,19 +9,56 @@ import type { GoodsReceipt } from "@/types/goodsReceipt";
 
 export default function GoodsReceiptPage() {
   const receipts = useOfflineStore((state) => state.goodsReceipts);
+  const parties = useOfflineStore((state) => state.masterParties);
+  const items = useOfflineStore((state) => state.itemMasters);
+  const uoms = useOfflineStore((state) => state.unitOfMeasures);
   const addGoodsReceipt = useOfflineStore((state) => state.addGoodsReceipt);
   const [vendorName, setVendorName] = useState("");
   const [itemName, setItemName] = useState("");
+  const [vendorId, setVendorId] = useState("");
+  const [itemId, setItemId] = useState("");
   const [quantityReceived, setQuantityReceived] = useState("");
   const [unit, setUnit] = useState("sak");
   const [condition, setCondition] = useState<GoodsReceipt["condition"] | "">("");
   const [msg, setMsg] = useState("");
+
+  const vendorOptions = useMemo(
+    () => parties
+      .filter((party) => party.party_type === "vendor" || party.party_type === "supplier")
+      .map((party) => ({ value: party.id, label: party.name })),
+    [parties],
+  );
+
+  const itemOptions = useMemo(
+    () => items.map((item) => ({ value: item.id, label: `${item.sku} - ${item.name}` })),
+    [items],
+  );
+
+  const unitOptions = useMemo(
+    () => uoms.map((uom) => ({ value: uom.symbol, label: `${uom.name} (${uom.symbol})` })),
+    [uoms],
+  );
 
   const conditionOptions = [
     { value: "good", label: "Good" },
     { value: "partial", label: "Partial" },
     { value: "damaged", label: "Damaged" },
   ];
+
+  const onVendorChange = (value: string) => {
+    setVendorId(value);
+    const selectedVendor = parties.find((party) => party.id === value);
+    setVendorName(selectedVendor?.name || "");
+  };
+
+  const onItemChange = (value: string) => {
+    setItemId(value);
+    const selectedItem = items.find((item) => item.id === value);
+    if (!selectedItem) return;
+
+    setItemName(selectedItem.name);
+    setUnit(selectedItem.default_uom);
+  };
 
   const handleAddReceipt = (e: React.FormEvent) => {
     e.preventDefault();
@@ -41,6 +78,8 @@ export default function GoodsReceiptPage() {
     setMsg("Goods receipt berhasil ditambahkan.");
     setVendorName("");
     setItemName("");
+    setVendorId("");
+    setItemId("");
     setQuantityReceived("");
     setUnit("sak");
     setCondition("");
@@ -52,14 +91,14 @@ export default function GoodsReceiptPage() {
         <form onSubmit={handleAddReceipt} className="space-y-4">
           <div>
             <h1 className="text-xl font-semibold text-slate-900">Goods Receipt</h1>
-            <p className="mt-1 text-sm text-slate-600">Penerimaan barang sementara mode offline (tanpa database).</p>
+            <p className="mt-1 text-sm text-slate-600">Penerimaan barang terintegrasi dengan master vendor/supplier, item, dan unit.</p>
           </div>
 
           <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
-            <Input value={vendorName} onChange={(e) => setVendorName(e.target.value)} placeholder="Vendor" className="w-full" required />
-            <Input value={itemName} onChange={(e) => setItemName(e.target.value)} placeholder="Item" className="w-full" required />
+            <Select options={vendorOptions} value={vendorId} onChange={(e) => onVendorChange(e.target.value)} required className="w-full" />
+            <Select options={itemOptions} value={itemId} onChange={(e) => onItemChange(e.target.value)} required className="w-full" />
             <Input type="number" min={1} value={quantityReceived} onChange={(e) => setQuantityReceived(e.target.value)} placeholder="Qty Diterima" className="w-full" required />
-            <Input value={unit} onChange={(e) => setUnit(e.target.value)} placeholder="Unit" className="w-full" required />
+            <Select options={unitOptions} value={unit} onChange={(e) => setUnit(e.target.value)} required className="w-full" />
             <Select options={conditionOptions} value={condition} onChange={(e) => setCondition(e.target.value as GoodsReceipt["condition"] | "")} required className="w-full" />
           </div>
 

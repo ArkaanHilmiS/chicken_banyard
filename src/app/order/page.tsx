@@ -1,5 +1,5 @@
 "use client";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import Input from "@/components/ui/input";
 import Select from "@/components/ui/select";
 import Button from "@/components/ui/button";
@@ -13,10 +13,27 @@ const serviceMethods = [
 
 export default function OrderPage() {
   const addOrder = useOfflineStore((state) => state.addOrder);
+  const parties = useOfflineStore((state) => state.masterParties);
+  const [customerId, setCustomerId] = useState("");
   const [qty, setQty] = useState("");
   const [serviceMethod, setServiceMethod] = useState<"antar" | "ambil" | "">("");
   const [address, setAddress] = useState("");
   const [msg, setMsg] = useState("");
+
+  const customerOptions = useMemo(
+    () => parties
+      .filter((party) => party.party_type === "customer")
+      .map((party) => ({ value: party.id, label: party.name })),
+    [parties],
+  );
+
+  const onCustomerChange = (value: string) => {
+    setCustomerId(value);
+    const selectedCustomer = parties.find((party) => party.id === value);
+    if (selectedCustomer?.address) {
+      setAddress(selectedCustomer.address);
+    }
+  };
 
   const handleOrder = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -31,6 +48,7 @@ export default function OrderPage() {
       address,
     });
     setMsg("Pesanan berhasil disimpan sementara (offline).");
+    setCustomerId("");
     setQty("");
     setServiceMethod("");
     setAddress("");
@@ -43,6 +61,13 @@ export default function OrderPage() {
         <p className="mt-1 text-sm text-slate-600">Input pesanan pelanggan untuk diproses ke payment, stok, dan laporan.</p>
 
         <form onSubmit={handleOrder} className="mt-5 space-y-3">
+          <Select
+            options={customerOptions}
+            value={customerId}
+            onChange={(e) => onCustomerChange(e.target.value)}
+            required
+            className="w-full"
+          />
           <Input
             type="number"
             value={qty}

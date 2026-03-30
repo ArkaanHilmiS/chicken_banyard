@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import Button from "@/components/ui/button";
 import Input from "@/components/ui/input";
 import Select from "@/components/ui/select";
@@ -9,14 +9,37 @@ import type { Purchase } from "@/types/purchase";
 
 export default function ProcurementPage() {
   const purchases = useOfflineStore((state) => state.purchases);
+  const parties = useOfflineStore((state) => state.masterParties);
+  const items = useOfflineStore((state) => state.itemMasters);
+  const uoms = useOfflineStore((state) => state.unitOfMeasures);
+  const priceMasters = useOfflineStore((state) => state.priceMasters);
   const addPurchase = useOfflineStore((state) => state.addPurchase);
   const [vendorName, setVendorName] = useState("");
   const [itemName, setItemName] = useState("");
+  const [vendorId, setVendorId] = useState("");
+  const [itemId, setItemId] = useState("");
   const [quantity, setQuantity] = useState("");
   const [unit, setUnit] = useState("paket");
   const [unitPrice, setUnitPrice] = useState("");
   const [category, setCategory] = useState<Purchase["category"] | "">("");
   const [msg, setMsg] = useState("");
+
+  const vendorOptions = useMemo(
+    () => parties
+      .filter((party) => party.party_type === "vendor" || party.party_type === "supplier")
+      .map((party) => ({ value: party.id, label: party.name })),
+    [parties],
+  );
+
+  const itemOptions = useMemo(
+    () => items.map((item) => ({ value: item.id, label: `${item.sku} - ${item.name}` })),
+    [items],
+  );
+
+  const unitOptions = useMemo(
+    () => uoms.map((uom) => ({ value: uom.symbol, label: `${uom.name} (${uom.symbol})` })),
+    [uoms],
+  );
 
   const categoryOptions = [
     { value: "utility", label: "Utility" },
@@ -26,6 +49,37 @@ export default function ProcurementPage() {
     { value: "asset", label: "Asset" },
     { value: "other", label: "Other" },
   ];
+
+  const inferCategoryFromItem = (itemCategory: string): Purchase["category"] => {
+    const normalized = itemCategory.toLowerCase();
+    if (normalized.includes("pakan") || normalized.includes("feed")) return "feed";
+    if (normalized.includes("ayam") || normalized.includes("livestock")) return "livestock";
+    if (normalized.includes("utility") || normalized.includes("listrik") || normalized.includes("air")) return "utility";
+    if (normalized.includes("asset")) return "asset";
+    if (normalized.includes("operasional")) return "operational";
+    return "other";
+  };
+
+  const onVendorChange = (value: string) => {
+    setVendorId(value);
+    const selectedVendor = parties.find((party) => party.id === value);
+    setVendorName(selectedVendor?.name || "");
+  };
+
+  const onItemChange = (value: string) => {
+    setItemId(value);
+    const selectedItem = items.find((item) => item.id === value);
+    if (!selectedItem) return;
+
+    setItemName(selectedItem.name);
+    setUnit(selectedItem.default_uom);
+    setCategory(inferCategoryFromItem(selectedItem.category));
+
+    const matchedPurchasePrice = priceMasters.find(
+      (row) => row.item_id === selectedItem.id && row.price_type === "purchase",
+    );
+    setUnitPrice(String(matchedPurchasePrice?.price_value ?? selectedItem.purchase_price));
+  };
 
   const handleAddPurchase = (e: React.FormEvent) => {
     e.preventDefault();
@@ -46,6 +100,8 @@ export default function ProcurementPage() {
     setMsg("Data pembelian berhasil ditambahkan.");
     setVendorName("");
     setItemName("");
+    setVendorId("");
+    setItemId("");
     setQuantity("");
     setUnit("paket");
     setUnitPrice("");
@@ -58,14 +114,14 @@ export default function ProcurementPage() {
         <form onSubmit={handleAddPurchase} className="space-y-4">
           <div>
             <h1 className="text-xl font-semibold text-slate-900">Procurement</h1>
-            <p className="mt-1 text-sm text-slate-600">Kelola pembelian kebutuhan farm secara offline sementara (tanpa database).</p>
+            <p className="mt-1 text-sm text-slate-600">Kelola pembelian kebutuhan farm terintegrasi dengan master data vendor/supplier, item, unit, dan harga master.</p>
           </div>
 
           <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
-            <Input value={vendorName} onChange={(e) => setVendorName(e.target.value)} placeholder="Vendor" className="w-full" required />
-            <Input value={itemName} onChange={(e) => setItemName(e.target.value)} placeholder="Item" className="w-full" required />
+            <Select options={vendorOptions} value={vendorId} onChange={(e) => onVendorChange(e.target.value)} required className="w-full" />
+            <Select options={itemOptions} value={itemId} onChange={(e) => onItemChange(e.target.value)} required className="w-full" />
             <Input type="number" min={1} value={quantity} onChange={(e) => setQuantity(e.target.value)} placeholder="Qty" className="w-full" required />
-            <Input value={unit} onChange={(e) => setUnit(e.target.value)} placeholder="Unit (kg/sak/paket)" className="w-full" required />
+            <Select options={unitOptions} value={unit} onChange={(e) => setUnit(e.target.value)} required className="w-full" />
             <Input type="number" min={1} value={unitPrice} onChange={(e) => setUnitPrice(e.target.value)} placeholder="Unit Price" className="w-full" required />
             <Select options={categoryOptions} value={category} onChange={(e) => setCategory(e.target.value as Purchase["category"] | "")} required className="w-full" />
           </div>

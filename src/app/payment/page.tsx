@@ -1,5 +1,5 @@
 "use client";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import Button from "@/components/ui/button";
 import Input from "@/components/ui/input";
 import Select from "@/components/ui/select";
@@ -8,10 +8,12 @@ import { useOfflineStore } from "@/lib/offlineStore";
 
 export default function PaymentPage() {
   const payments = useOfflineStore((state) => state.payments);
+  const parties = useOfflineStore((state) => state.masterParties);
   const addPayment = useOfflineStore((state) => state.addPayment);
   const [direction, setDirection] = useState<"incoming" | "outgoing" | "">("");
   const [paymentFor, setPaymentFor] = useState<NonNullable<Payment["payment_for"]> | "">("");
   const [vendorName, setVendorName] = useState("");
+  const [partyId, setPartyId] = useState("");
   const [method, setMethod] = useState<Payment["payment_method"] | "">("");
   const [amount, setAmount] = useState("");
   const [msg, setMsg] = useState("");
@@ -44,6 +46,41 @@ export default function PaymentPage() {
     { value: "cash", label: "Cash" },
     { value: "qris", label: "QRIS" },
   ];
+
+  const partyOptions = useMemo(() => {
+    if (!direction) return [];
+
+    return parties
+      .filter((party) => {
+        if (direction === "incoming") {
+          return party.party_type === "customer" || party.party_type === "stakeholder";
+        }
+        return party.party_type === "vendor" || party.party_type === "supplier" || party.party_type === "stakeholder";
+      })
+      .map((party) => ({ value: party.id, label: `${party.name} (${party.party_type})` }));
+  }, [direction, parties]);
+
+  const onDirectionChange = (value: "incoming" | "outgoing" | "") => {
+    setDirection(value);
+    setPartyId("");
+    setVendorName("");
+    setMethod("");
+
+    if (value === "incoming") {
+      setPaymentFor((prev) => (prev ? prev : "sales"));
+    }
+  };
+
+  const onPartyChange = (value: string) => {
+    setPartyId(value);
+    const selectedParty = parties.find((party) => party.id === value);
+    if (!selectedParty) return;
+
+    setVendorName(selectedParty.name);
+    if (selectedParty.preferred_payment_method) {
+      setMethod(selectedParty.preferred_payment_method);
+    }
+  };
 
   const handleAddPayment = (e: React.FormEvent) => {
     e.preventDefault();
@@ -78,9 +115,9 @@ export default function PaymentPage() {
           </div>
 
           <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
-            <Select options={directionOptions} value={direction} onChange={(e) => setDirection(e.target.value as "incoming" | "outgoing" | "")} required className="w-full" />
+            <Select options={directionOptions} value={direction} onChange={(e) => onDirectionChange(e.target.value as "incoming" | "outgoing" | "")} required className="w-full" />
             <Select options={paymentForOptions} value={paymentFor} onChange={(e) => setPaymentFor(e.target.value as NonNullable<Payment["payment_for"]> | "")} required className="w-full" />
-            <Input value={vendorName} onChange={(e) => setVendorName(e.target.value)} placeholder="Vendor / Pelanggan" className="w-full" />
+            <Select options={partyOptions} value={partyId} onChange={(e) => onPartyChange(e.target.value)} className="w-full" />
             <Select options={methodOptions} value={method} onChange={(e) => setMethod(e.target.value as Payment["payment_method"] | "")} required className="w-full" />
             <Input type="number" min={1} value={amount} onChange={(e) => setAmount(e.target.value)} placeholder="Nominal" className="w-full" required />
           </div>

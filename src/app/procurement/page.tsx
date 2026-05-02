@@ -135,12 +135,30 @@ export default function ProcurementPage() {
           </div>
 
           <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
-            <Select options={vendorOptions} value={vendorId} onChange={(e) => onVendorChange(e.target.value)} required className="w-full" />
-            <Select options={itemOptions} value={itemId} onChange={(e) => onItemChange(e.target.value)} required className="w-full" />
-            <Input type="number" min={1} value={quantity} onChange={(e) => setQuantity(e.target.value)} placeholder={locale === "en" ? "Quantity" : "Qty"} className="w-full" required />
-            <Select options={unitOptions} value={unit} onChange={(e) => setUnit(e.target.value)} required className="w-full" />
-            <Input type="number" min={1} value={unitPrice} onChange={(e) => setUnitPrice(e.target.value)} placeholder={locale === "en" ? "Unit Price" : "Harga Satuan"} className="w-full" required />
-            <Select options={categoryOptions} value={category} onChange={(e) => setCategory(e.target.value as Purchase["category"] | "")} required className="w-full" />
+            <div className="space-y-1">
+              <label className="text-xs font-medium text-slate-600">{locale === "en" ? "Vendor" : "Vendor"}</label>
+              <Select options={vendorOptions} value={vendorId} onChange={(e) => onVendorChange(e.target.value)} required className="w-full" />
+            </div>
+            <div className="space-y-1">
+              <label className="text-xs font-medium text-slate-600">{locale === "en" ? "Item" : "Item"}</label>
+              <Select options={itemOptions} value={itemId} onChange={(e) => onItemChange(e.target.value)} required className="w-full" />
+            </div>
+            <div className="space-y-1">
+              <label className="text-xs font-medium text-slate-600">{locale === "en" ? "Quantity" : "Qty"}</label>
+              <Input type="number" min={1} value={quantity} onChange={(e) => setQuantity(e.target.value)} placeholder={locale === "en" ? "Quantity" : "Qty"} className="w-full" required />
+            </div>
+            <div className="space-y-1">
+              <label className="text-xs font-medium text-slate-600">{locale === "en" ? "Unit" : "Unit"}</label>
+              <Select options={unitOptions} value={unit} onChange={(e) => setUnit(e.target.value)} required className="w-full" />
+            </div>
+            <div className="space-y-1">
+              <label className="text-xs font-medium text-slate-600">{locale === "en" ? "Unit Price" : "Harga Satuan"}</label>
+              <Input type="number" min={1} value={unitPrice} onChange={(e) => setUnitPrice(e.target.value)} placeholder={locale === "en" ? "Unit Price" : "Harga Satuan"} className="w-full" required />
+            </div>
+            <div className="space-y-1">
+              <label className="text-xs font-medium text-slate-600">{locale === "en" ? "Category" : "Kategori"}</label>
+              <Select options={categoryOptions} value={category} onChange={(e) => setCategory(e.target.value as Purchase["category"] | "")} required className="w-full" />
+            </div>
           </div>
 
           <div className="flex items-center justify-between gap-3">
@@ -160,6 +178,7 @@ export default function ProcurementPage() {
             <thead className="border-y border-slate-200 bg-slate-50 text-left text-slate-600">
               <tr>
                 <th className="p-3">{locale === "en" ? "Date" : "Tanggal"}</th>
+                <th className="p-3">{locale === "en" ? "PO No" : "No. PO"}</th>
                 <th className="p-3">{locale === "en" ? "Vendor" : "Vendor"}</th>
                 <th className="p-3">{locale === "en" ? "Item" : "Item"}</th>
                 <th className="p-3">{locale === "en" ? "Qty" : "Qty"}</th>
@@ -171,12 +190,13 @@ export default function ProcurementPage() {
             <tbody className="text-slate-700">
               {purchases.length === 0 ? (
                 <tr>
-                  <td className="p-3 text-slate-500" colSpan={7}>{locale === "en" ? "No purchases yet." : "Belum ada data pembelian."}</td>
+                  <td className="p-3 text-slate-500" colSpan={8}>{locale === "en" ? "No purchases yet." : "Belum ada data pembelian."}</td>
                 </tr>
               ) : (
                 purchases.map((p) => (
                   <tr key={p.id} className="border-b border-slate-100">
                     <td className="p-3">{p.purchase_date}</td>
+                    <td className="p-3 font-medium text-slate-900">{p.po_number || "-"}</td>
                     <td className="p-3">{p.vendor_name}</td>
                     <td className="p-3">{p.item_name}</td>
                     <td className="p-3">{p.quantity} {p.unit}</td>

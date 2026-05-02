@@ -24,8 +24,14 @@ export default function LoginPage() {
         {locale === "en" ? "Sign in to access Chicken Banyard operational modules." : "Masuk untuk mengakses modul operasional Chicken Banyard."}
       </p>
       <form onSubmit={handleLogin} className="mt-5 space-y-3">
-        <Input type="email" value={email} onChange={e => setEmail(e.target.value)} placeholder={locale === "en" ? "Email" : "Email"} required className="w-full" />
-        <Input type="password" value={password} onChange={e => setPassword(e.target.value)} placeholder={locale === "en" ? "Password" : "Password"} required className="w-full" />
+        <div className="space-y-1">
+          <label className="text-xs font-medium text-slate-600">{locale === "en" ? "Email" : "Email"}</label>
+          <Input type="email" value={email} onChange={e => setEmail(e.target.value)} placeholder={locale === "en" ? "Email" : "Email"} required className="w-full" />
+        </div>
+        <div className="space-y-1">
+          <label className="text-xs font-medium text-slate-600">{locale === "en" ? "Password" : "Password"}</label>
+          <Input type="password" value={password} onChange={e => setPassword(e.target.value)} placeholder={locale === "en" ? "Password" : "Password"} required className="w-full" />
+        </div>
         <Button type="submit" className="w-full">{locale === "en" ? "Sign In" : "Login"}</Button>
         {msg && <div className="text-sm text-slate-700">{msg}</div>}
       </form>

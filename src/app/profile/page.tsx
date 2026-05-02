@@ -41,9 +41,18 @@ export default function ProfilePage() {
           : "Perbarui data pengguna untuk operasional dan notifikasi WhatsApp."}
       </p>
       <form onSubmit={handleSubmit} className="mt-5 space-y-3">
-        <input className="block w-full rounded-md border border-slate-300 px-3 py-2" placeholder={locale === "en" ? "Username" : "Username"} value={username} onChange={e => setUsername(e.target.value)} />
-        <input className="block w-full rounded-md border border-slate-300 px-3 py-2" placeholder={locale === "en" ? "WhatsApp Number" : "Nomor WhatsApp"} value={whatsapp} onChange={e => setWhatsapp(e.target.value)} />
-        <input className="block w-full rounded-md border border-slate-300 px-3 py-2" placeholder={locale === "en" ? "Capital Address" : "Alamat Modal"} value={capitalAddress} onChange={e => setCapitalAddress(e.target.value)} />
+        <div className="space-y-1">
+          <label className="text-xs font-medium text-slate-600">{locale === "en" ? "Username" : "Username"}</label>
+          <input className="block w-full rounded-md border border-slate-300 px-3 py-2" placeholder={locale === "en" ? "Username" : "Username"} value={username} onChange={e => setUsername(e.target.value)} />
+        </div>
+        <div className="space-y-1">
+          <label className="text-xs font-medium text-slate-600">{locale === "en" ? "WhatsApp Number" : "Nomor WhatsApp"}</label>
+          <input className="block w-full rounded-md border border-slate-300 px-3 py-2" placeholder={locale === "en" ? "WhatsApp Number" : "Nomor WhatsApp"} value={whatsapp} onChange={e => setWhatsapp(e.target.value)} />
+        </div>
+        <div className="space-y-1">
+          <label className="text-xs font-medium text-slate-600">{locale === "en" ? "Capital Address" : "Alamat Modal"}</label>
+          <input className="block w-full rounded-md border border-slate-300 px-3 py-2" placeholder={locale === "en" ? "Capital Address" : "Alamat Modal"} value={capitalAddress} onChange={e => setCapitalAddress(e.target.value)} />
+        </div>
         <button className="rounded-md bg-teal-700 px-4 py-2 text-white hover:bg-teal-800" type="submit">{locale === "en" ? "Save" : "Simpan"}</button>
       </form>
       {message && <div className="mt-3 text-sm text-slate-700">{message}</div>}

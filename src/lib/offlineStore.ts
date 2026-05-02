@@ -21,6 +21,41 @@ const today = () => new Date().toISOString().slice(0, 10);
 
 const makeId = (prefix: string) => `${prefix}-${Date.now()}-${Math.floor(Math.random() * 1000)}`;
 
+const DEFAULT_EGG_SKU = "TLR01";
+const DEFAULT_EGG_NAME = "Telur Ayam Negeri";
+const DEFAULT_EGG_UOM = "kg";
+const DEFAULT_EGG_CATEGORY = "Produk Utama";
+const DEFAULT_EGG_MIN_STOCK = 300;
+
+const toSequenceNumber = (prefix: "SO" | "PO", value: number) => `${prefix}${String(value).padStart(10, "0")}`;
+
+const nextSequenceNumber = (prefix: "SO" | "PO", items: Array<{ so_number?: string; po_number?: string }>) => {
+  const max = items.reduce((acc, item) => {
+    const raw = prefix === "SO" ? item.so_number : item.po_number;
+    if (!raw || !raw.startsWith(prefix)) return acc;
+    const numeric = Number(raw.slice(prefix.length));
+    if (Number.isNaN(numeric)) return acc;
+    return Math.max(acc, numeric);
+  }, 0);
+
+  return toSequenceNumber(prefix, max + 1);
+};
+
+const latestPricePerKg = (prices: Price[]) => prices[0]?.price_per_kg ?? 0;
+
+const buildDefaultEggItem = (sellingPrice: number): ItemMaster => ({
+  id: makeId("ITM"),
+  sku: DEFAULT_EGG_SKU,
+  name: DEFAULT_EGG_NAME,
+  category: DEFAULT_EGG_CATEGORY,
+  default_uom: DEFAULT_EGG_UOM,
+  purchase_price: sellingPrice,
+  selling_price: sellingPrice,
+  min_stock: DEFAULT_EGG_MIN_STOCK,
+  is_active: true,
+  created_at: nowIso(),
+});
+
 interface OfflineStoreState {
   orders: Order[];
   payments: Payment[];
@@ -47,7 +82,7 @@ interface OfflineStoreState {
     paymentMethod: Order["payment_method"];
     deliveryDate: string;
     deliveryTime: string;
-  }) => void;
+  }) => { ok: boolean; message: string };
   updateOrderStatus: (orderId: string, status: Order["order_status"]) => void;
   addPurchase: (input: { vendorName: string; itemId: string; itemName: string; quantity: number; unit: string; unitPrice: number; category: Purchase["category"] }) => void;
   addGoodsReceipt: (input: { purchaseId?: string; vendorName: string; itemId: string; itemName: string; quantityReceived: number; unit: string; warehouseId: string; condition: GoodsReceipt["condition"] }) => void;
@@ -180,9 +215,11 @@ const seedChartOfAccounts: ChartOfAccount[] = [
 
 const seedMasterParties: MasterParty[] = [];
 
-const seedUnitOfMeasures: UnitOfMeasure[] = [];
+const seedUnitOfMeasures: UnitOfMeasure[] = [
+  { id: "UOM-001", name: "Kilogram", symbol: "kg", description: "Default weight unit", is_active: true, created_at: nowIso() },
+];
 
-const seedItemMasters: ItemMaster[] = [];
+const seedItemMasters: ItemMaster[] = [buildDefaultEggItem(latestPricePerKg(seedPrices))];
 
 const seedWarehouses: Warehouse[] = [
   { id: "WH-001", name: "Gudang Telur", code: "GDT", location: "Zona Produksi", is_active: true, created_at: nowIso() },
@@ -213,13 +250,60 @@ export const useOfflineStore = create<OfflineStoreState>((set, get) => ({
   setLocale: (locale) => set({ locale }),
 
   addOrder: ({ itemId, quantity, serviceMethod, address, paymentMethod, deliveryDate, deliveryTime }) => {
+    const locale = get().locale;
     const selectedItem = get().itemMasters.find((item) => item.id === itemId);
-    if (!selectedItem || !selectedItem.is_active) return;
+    if (!selectedItem || !selectedItem.is_active) {
+      return {
+        ok: false,
+        message: locale === "en" ? "Active item not found." : "Item aktif tidak ditemukan.",
+      };
+    }
+
+    const onHand = get().stocks.reduce((sum, stock) => {
+      if (stock.item_id !== itemId) return sum;
+      const signedQty = stock.stock_type === "outgoing" ? -stock.quantity : stock.quantity;
+      return sum + signedQty;
+    }, 0);
+
+    const committed = get().orders.reduce((sum, order) => {
+      if (order.item_id !== itemId) return sum;
+      if (order.order_status === "cancelled" || order.order_status === "delivered") return sum;
+      return sum + order.quantity;
+    }, 0);
+
+    const receivedByPurchase = new Map<string, number>();
+    for (const receipt of get().goodsReceipts) {
+      if (!receipt.purchase_id) continue;
+      receivedByPurchase.set(
+        receipt.purchase_id,
+        (receivedByPurchase.get(receipt.purchase_id) || 0) + receipt.quantity_received,
+      );
+    }
+
+    const ordered = get().purchases.reduce((sum, purchase) => {
+      if (purchase.item_id !== itemId) return sum;
+      const received = purchase.id ? receivedByPurchase.get(purchase.id) || 0 : 0;
+      const remaining = Math.max(0, purchase.quantity - received);
+      return sum + remaining;
+    }, 0);
+
+    const available = onHand - committed + ordered;
+    if (quantity > available) {
+      const safeAvailable = Math.max(0, available);
+      return {
+        ok: false,
+        message: locale === "en"
+          ? `Insufficient stock. Available: ${safeAvailable} ${selectedItem.default_uom}.`
+          : `Stok tidak mencukupi. Tersedia: ${safeAvailable} ${selectedItem.default_uom}.`,
+      };
+    }
     const sellingPriceFromMaster = get().priceMasters.find((price) => price.item_id === itemId && price.price_type === "selling")?.price_value;
     const unitPrice = sellingPriceFromMaster ?? selectedItem.selling_price;
+    const soNumber = nextSequenceNumber("SO", get().orders);
 
     const newOrder: Order = {
       id: makeId("SO"),
+      so_number: soNumber,
       user_id: get().currentUserId ?? "USR-001",
       order_date: today(),
       item_id: itemId,
@@ -270,6 +354,11 @@ export const useOfflineStore = create<OfflineStoreState>((set, get) => ({
       payments: [newPayment, ...state.payments],
       journals: [newJournal, ...state.journals],
     }));
+
+    return {
+      ok: true,
+      message: locale === "en" ? "Order saved with Pending status." : "Pesanan berhasil dicatat dengan status Pending.",
+    };
   },
 
   updateOrderStatus: (orderId, status) => {
@@ -327,8 +416,10 @@ export const useOfflineStore = create<OfflineStoreState>((set, get) => ({
 
     const activeUserId = get().currentUserId ?? "USR-001";
     const total = quantity * unitPrice;
+    const poNumber = nextSequenceNumber("PO", get().purchases);
     const newPurchase: Purchase = {
       id: makeId("PO"),
+      po_number: poNumber,
       purchase_date: today(),
       vendor_name: vendorName,
       item_id: itemId,
@@ -558,7 +649,21 @@ export const useOfflineStore = create<OfflineStoreState>((set, get) => ({
       created_at: nowIso(),
     };
 
-    set((state) => ({ prices: [newPrice, ...state.prices] }));
+    set((state) => {
+      const hasEggItem = state.itemMasters.some((item) => item.sku === DEFAULT_EGG_SKU);
+      const updatedItems = hasEggItem
+        ? state.itemMasters.map((item) =>
+          item.sku === DEFAULT_EGG_SKU
+            ? { ...item, selling_price: pricePerKg }
+            : item,
+        )
+        : [buildDefaultEggItem(pricePerKg), ...state.itemMasters];
+
+      return {
+        prices: [newPrice, ...state.prices],
+        itemMasters: updatedItems,
+      };
+    });
   },
 
   addItemMaster: ({ sku, name, category, defaultUom, purchasePrice, sellingPrice, minStock, description, isActive }) => {

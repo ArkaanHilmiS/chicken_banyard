@@ -9,6 +9,9 @@ export default function OrderPage() {
   const addOrder = useOfflineStore((state) => state.addOrder);
   const updateOrderStatus = useOfflineStore((state) => state.updateOrderStatus);
   const orders = useOfflineStore((state) => state.orders);
+  const purchases = useOfflineStore((state) => state.purchases);
+  const goodsReceipts = useOfflineStore((state) => state.goodsReceipts);
+  const stocks = useOfflineStore((state) => state.stocks);
   const parties = useOfflineStore((state) => state.masterParties);
   const itemMasters = useOfflineStore((state) => state.itemMasters);
   const priceMasters = useOfflineStore((state) => state.priceMasters);
@@ -51,11 +54,57 @@ export default function OrderPage() {
     [itemMasters, itemId],
   );
 
+  const receivedByPurchase = useMemo(() => {
+    const summary = new Map<string, number>();
+    for (const receipt of goodsReceipts) {
+      if (!receipt.purchase_id) continue;
+      summary.set(receipt.purchase_id, (summary.get(receipt.purchase_id) || 0) + receipt.quantity_received);
+    }
+    return summary;
+  }, [goodsReceipts]);
+
+  const orderedByItem = useMemo(() => {
+    const summary = new Map<string, number>();
+    for (const purchase of purchases) {
+      const received = purchase.id ? receivedByPurchase.get(purchase.id) || 0 : 0;
+      const remaining = Math.max(0, purchase.quantity - received);
+      if (remaining <= 0) continue;
+      summary.set(purchase.item_id, (summary.get(purchase.item_id) || 0) + remaining);
+    }
+    return summary;
+  }, [purchases, receivedByPurchase]);
+
+  const committedByItem = useMemo(() => {
+    const summary = new Map<string, number>();
+    for (const order of orders) {
+      if (order.order_status === "cancelled" || order.order_status === "delivered") continue;
+      summary.set(order.item_id, (summary.get(order.item_id) || 0) + order.quantity);
+    }
+    return summary;
+  }, [orders]);
+
+  const onHandByItem = useMemo(() => {
+    const summary = new Map<string, number>();
+    for (const stock of stocks) {
+      const signedQty = stock.stock_type === "outgoing" ? -stock.quantity : stock.quantity;
+      summary.set(stock.item_id, (summary.get(stock.item_id) || 0) + signedQty);
+    }
+    return summary;
+  }, [stocks]);
+
   const currentUnitPrice = useMemo(() => {
     if (!selectedItem) return 0;
     const sellingPriceFromMaster = priceMasters.find((row) => row.item_id === selectedItem.id && row.price_type === "selling")?.price_value;
     return sellingPriceFromMaster ?? selectedItem.selling_price;
   }, [selectedItem, priceMasters]);
+
+  const availableStock = useMemo(() => {
+    if (!selectedItem) return 0;
+    const onHand = onHandByItem.get(selectedItem.id) || 0;
+    const ordered = orderedByItem.get(selectedItem.id) || 0;
+    const committed = committedByItem.get(selectedItem.id) || 0;
+    return onHand - committed + ordered;
+  }, [selectedItem, onHandByItem, orderedByItem, committedByItem]);
 
   const estimatedTotal = useMemo(() => Number(qty || 0) * currentUnitPrice, [qty, currentUnitPrice]);
 
@@ -84,7 +133,7 @@ export default function OrderPage() {
       setMsg(locale === "en" ? "All fields are required." : "Semua field wajib diisi");
       return;
     }
-    addOrder({
+    const result = addOrder({
       itemId,
       quantity: Number(qty),
       serviceMethod,
@@ -93,7 +142,12 @@ export default function OrderPage() {
       deliveryDate,
       deliveryTime,
     });
-    setMsg(locale === "en" ? "Order saved with Pending status." : "Pesanan berhasil dicatat dengan status Pending.");
+    if (!result.ok) {
+      setMsg(result.message);
+      return;
+    }
+
+    setMsg(result.message);
     setCustomerId("");
     setItemId("");
     setQty("");
@@ -119,70 +173,95 @@ export default function OrderPage() {
         </p>
 
         <form onSubmit={handleOrder} className="mt-5 space-y-3">
-          <Select
-            options={customerOptions}
-            value={customerId}
-            onChange={(e) => onCustomerChange(e.target.value)}
-            required
-            className="w-full"
-          />
-          <Select
-            options={itemOptions}
-            value={itemId}
-            onChange={(e) => setItemId(e.target.value)}
-            required
-            className="w-full"
-          />
-          <Input
-            type="number"
-            value={qty}
-            onChange={(e) => setQty(e.target.value)}
-            placeholder={locale === "en" ? `Quantity (${selectedItem?.default_uom || "unit"})` : `Jumlah (${selectedItem?.default_uom || "unit"})`}
-            required
-            min={1}
-            className="w-full"
-          />
-          <Select
-            options={serviceMethods}
-            value={serviceMethod}
-            onChange={(e) => setServiceMethod(e.target.value as "antar" | "ambil" | "")}
-            required
-            className="w-full"
-          />
-          <Select
-            options={paymentMethodOptions}
-            value={paymentMethod}
-            onChange={(e) => setPaymentMethod(e.target.value as "qris" | "cash" | "")}
-            required
-            className="w-full"
-          />
-          <div className="grid gap-3 sm:grid-cols-2">
-            <Input
-              type="date"
-              value={deliveryDate}
-              onChange={(e) => setDeliveryDate(e.target.value)}
-              required
-              className="w-full"
-            />
-            <Input
-              type="time"
-              value={deliveryTime}
-              onChange={(e) => setDeliveryTime(e.target.value)}
+          <div className="space-y-1">
+            <label className="text-xs font-medium text-slate-600">{locale === "en" ? "Customer" : "Pelanggan"}</label>
+            <Select
+              options={customerOptions}
+              value={customerId}
+              onChange={(e) => onCustomerChange(e.target.value)}
               required
               className="w-full"
             />
           </div>
-          <Input
-            type="text"
-            value={address}
-            onChange={(e) => setAddress(e.target.value)}
-            placeholder={locale === "en" ? "Full address" : "Alamat lengkap"}
-            required
-            className="w-full"
-          />
+          <div className="space-y-1">
+            <label className="text-xs font-medium text-slate-600">{locale === "en" ? "Item" : "Item"}</label>
+            <Select
+              options={itemOptions}
+              value={itemId}
+              onChange={(e) => setItemId(e.target.value)}
+              required
+              className="w-full"
+            />
+          </div>
+          <div className="space-y-1">
+            <label className="text-xs font-medium text-slate-600">{locale === "en" ? "Quantity" : "Jumlah"}</label>
+            <Input
+              type="number"
+              value={qty}
+              onChange={(e) => setQty(e.target.value)}
+              placeholder={locale === "en" ? `Quantity (${selectedItem?.default_uom || "unit"})` : `Jumlah (${selectedItem?.default_uom || "unit"})`}
+              required
+              min={1}
+              className="w-full"
+            />
+          </div>
+          <div className="space-y-1">
+            <label className="text-xs font-medium text-slate-600">{locale === "en" ? "Service Method" : "Metode Layanan"}</label>
+            <Select
+              options={serviceMethods}
+              value={serviceMethod}
+              onChange={(e) => setServiceMethod(e.target.value as "antar" | "ambil" | "")}
+              required
+              className="w-full"
+            />
+          </div>
+          <div className="space-y-1">
+            <label className="text-xs font-medium text-slate-600">{locale === "en" ? "Payment Method" : "Metode Pembayaran"}</label>
+            <Select
+              options={paymentMethodOptions}
+              value={paymentMethod}
+              onChange={(e) => setPaymentMethod(e.target.value as "qris" | "cash" | "")}
+              required
+              className="w-full"
+            />
+          </div>
+          <div className="grid gap-3 sm:grid-cols-2">
+            <div className="space-y-1">
+              <label className="text-xs font-medium text-slate-600">{locale === "en" ? "Delivery Date" : "Tanggal Kirim"}</label>
+              <Input
+                type="date"
+                value={deliveryDate}
+                onChange={(e) => setDeliveryDate(e.target.value)}
+                required
+                className="w-full"
+              />
+            </div>
+            <div className="space-y-1">
+              <label className="text-xs font-medium text-slate-600">{locale === "en" ? "Delivery Time" : "Jam Kirim"}</label>
+              <Input
+                type="time"
+                value={deliveryTime}
+                onChange={(e) => setDeliveryTime(e.target.value)}
+                required
+                className="w-full"
+              />
+            </div>
+          </div>
+          <div className="space-y-1">
+            <label className="text-xs font-medium text-slate-600">{locale === "en" ? "Address" : "Alamat"}</label>
+            <Input
+              type="text"
+              value={address}
+              onChange={(e) => setAddress(e.target.value)}
+              placeholder={locale === "en" ? "Full address" : "Alamat lengkap"}
+              required
+              className="w-full"
+            />
+          </div>
           <Button type="submit" className="w-full">{locale === "en" ? "Save Order" : "Simpan Order"}</Button>
           <div className="rounded-xl border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm text-emerald-900">
             <p>{locale === "en" ? "Unit Price" : "Harga Satuan"}: Rp {currentUnitPrice.toLocaleString(numberLocale)}</p>
+            <p>{locale === "en" ? "Available Stock" : "Stok Tersedia"}: {selectedItem ? `${availableStock} ${selectedItem.default_uom}` : "-"}</p>
             <p className="font-semibold">{locale === "en" ? "Total Price" : "Total Harga"}: Rp {estimatedTotal.toLocaleString(numberLocale)}</p>
           </div>
           {msg && (
@@ -215,6 +294,7 @@ export default function OrderPage() {
             <thead className="border-y border-slate-200 bg-slate-50 text-left text-slate-600">
               <tr>
                 <th className="p-3">{locale === "en" ? "Order ID" : "Order ID"}</th>
+                <th className="p-3">{locale === "en" ? "SO No" : "No. SO"}</th>
                 <th className="p-3">{locale === "en" ? "Order Date" : "Tanggal Order"}</th>
                 <th className="p-3">{locale === "en" ? "Details" : "Detail"}</th>
                 <th className="p-3">{locale === "en" ? "Service" : "Layanan"}</th>
@@ -226,12 +306,13 @@ export default function OrderPage() {
             <tbody className="text-slate-700">
               {orders.length === 0 ? (
                 <tr>
-                  <td className="p-3 text-slate-500" colSpan={7}>{locale === "en" ? "No sales orders yet." : "Belum ada pesanan sales."}</td>
+                  <td className="p-3 text-slate-500" colSpan={8}>{locale === "en" ? "No sales orders yet." : "Belum ada pesanan sales."}</td>
                 </tr>
               ) : (
                 orders.map((order) => (
                   <tr key={order.id} className="border-b border-slate-100 align-top">
                     <td className="p-3 font-medium text-slate-900">{order.id}</td>
+                    <td className="p-3 font-medium text-slate-900">{order.so_number || "-"}</td>
                     <td className="p-3">{order.order_date}</td>
                     <td className="p-3">
                       <div>{order.item_name}</div>

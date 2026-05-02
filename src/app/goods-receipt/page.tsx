@@ -91,10 +91,16 @@ export default function GoodsReceiptPage() {
       .filter((purchase) => purchase.payment_status !== "paid")
       .map((purchase) => ({
         value: purchase.id,
-        label: `${purchase.id} - ${purchase.vendor_name} - ${purchase.item_name}`,
+        label: `${purchase.po_number || purchase.id} - ${purchase.vendor_name} - ${purchase.item_name}`,
       })),
     [purchases],
   );
+
+  const purchaseNumber = (purchaseId?: string) => {
+    if (!purchaseId) return "-";
+    const purchase = purchases.find((row) => row.id === purchaseId);
+    return purchase?.po_number || purchaseId;
+  };
 
   const conditionLabel = (value: GoodsReceipt["condition"]) => {
     const match = conditionOptions.find((option) => option.value === value);
@@ -182,13 +188,34 @@ export default function GoodsReceiptPage() {
           </div>
 
           <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
-            <Select options={pendingPurchaseOptions} value={purchaseId} onChange={(e) => onPurchaseChange(e.target.value)} className="w-full" />
-            <Select options={vendorOptions} value={vendorId} onChange={(e) => onVendorChange(e.target.value)} required className="w-full" />
-            <Select options={itemOptions} value={itemId} onChange={(e) => onItemChange(e.target.value)} required className="w-full" />
-            <Input type="number" min={1} value={quantityReceived} onChange={(e) => setQuantityReceived(e.target.value)} placeholder={locale === "en" ? "Qty Received" : "Qty Diterima"} className="w-full" required />
-            <Select options={unitOptions} value={unit} onChange={(e) => setUnit(e.target.value)} required className="w-full" />
-            <Select options={warehouseOptions} value={warehouseId} onChange={(e) => setWarehouseId(e.target.value)} required className="w-full" />
-            <Select options={conditionOptions} value={condition} onChange={(e) => setCondition(e.target.value as GoodsReceipt["condition"] | "")} required className="w-full" />
+            <div className="space-y-1">
+              <label className="text-xs font-medium text-slate-600">{locale === "en" ? "Purchase Order" : "Purchase Order"}</label>
+              <Select options={pendingPurchaseOptions} value={purchaseId} onChange={(e) => onPurchaseChange(e.target.value)} className="w-full" />
+            </div>
+            <div className="space-y-1">
+              <label className="text-xs font-medium text-slate-600">{locale === "en" ? "Vendor" : "Vendor"}</label>
+              <Select options={vendorOptions} value={vendorId} onChange={(e) => onVendorChange(e.target.value)} required className="w-full" />
+            </div>
+            <div className="space-y-1">
+              <label className="text-xs font-medium text-slate-600">{locale === "en" ? "Item" : "Item"}</label>
+              <Select options={itemOptions} value={itemId} onChange={(e) => onItemChange(e.target.value)} required className="w-full" />
+            </div>
+            <div className="space-y-1">
+              <label className="text-xs font-medium text-slate-600">{locale === "en" ? "Qty Received" : "Qty Diterima"}</label>
+              <Input type="number" min={1} value={quantityReceived} onChange={(e) => setQuantityReceived(e.target.value)} placeholder={locale === "en" ? "Qty Received" : "Qty Diterima"} className="w-full" required />
+            </div>
+            <div className="space-y-1">
+              <label className="text-xs font-medium text-slate-600">{locale === "en" ? "Unit" : "Unit"}</label>
+              <Select options={unitOptions} value={unit} onChange={(e) => setUnit(e.target.value)} required className="w-full" />
+            </div>
+            <div className="space-y-1">
+              <label className="text-xs font-medium text-slate-600">{locale === "en" ? "Warehouse" : "Gudang"}</label>
+              <Select options={warehouseOptions} value={warehouseId} onChange={(e) => setWarehouseId(e.target.value)} required className="w-full" />
+            </div>
+            <div className="space-y-1">
+              <label className="text-xs font-medium text-slate-600">{locale === "en" ? "Condition" : "Kondisi"}</label>
+              <Select options={conditionOptions} value={condition} onChange={(e) => setCondition(e.target.value as GoodsReceipt["condition"] | "")} required className="w-full" />
+            </div>
           </div>
 
           <div className="flex items-center justify-between gap-3">
@@ -225,7 +252,7 @@ export default function GoodsReceiptPage() {
                 receipts.map((r) => (
                   <tr key={r.id} className="border-b border-slate-100">
                     <td className="p-3">{r.receipt_date}</td>
-                    <td className="p-3">{r.purchase_id || "-"}</td>
+                    <td className="p-3">{purchaseNumber(r.purchase_id)}</td>
                     <td className="p-3">{r.vendor_name}</td>
                     <td className="p-3">{r.item_name}</td>
                     <td className="p-3">{r.quantity_received} {r.unit}</td>

@@ -196,10 +196,22 @@ export default function JournalPage() {
           </div>
 
           <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
-            <Input value={description} onChange={(e) => setDescription(e.target.value)} placeholder={locale === "en" ? "Transaction description" : "Deskripsi transaksi"} className="w-full" required />
-            <Input type="number" min={1} value={amount} onChange={(e) => setAmount(e.target.value)} placeholder={locale === "en" ? "Amount" : "Nominal"} className="w-full" required />
-            <Select options={categoryOptions} value={category} onChange={(e) => setCategory(e.target.value as Journal["category"] | "")} required className="w-full" />
-            <Select options={typeOptions} value={type} onChange={(e) => setType(e.target.value)} required className="w-full" />
+            <div className="space-y-1">
+              <label className="text-xs font-medium text-slate-600">{locale === "en" ? "Description" : "Deskripsi"}</label>
+              <Input value={description} onChange={(e) => setDescription(e.target.value)} placeholder={locale === "en" ? "Transaction description" : "Deskripsi transaksi"} className="w-full" required />
+            </div>
+            <div className="space-y-1">
+              <label className="text-xs font-medium text-slate-600">{locale === "en" ? "Amount" : "Nominal"}</label>
+              <Input type="number" min={1} value={amount} onChange={(e) => setAmount(e.target.value)} placeholder={locale === "en" ? "Amount" : "Nominal"} className="w-full" required />
+            </div>
+            <div className="space-y-1">
+              <label className="text-xs font-medium text-slate-600">{locale === "en" ? "Category" : "Kategori"}</label>
+              <Select options={categoryOptions} value={category} onChange={(e) => setCategory(e.target.value as Journal["category"] | "")} required className="w-full" />
+            </div>
+            <div className="space-y-1">
+              <label className="text-xs font-medium text-slate-600">{locale === "en" ? "Type" : "Jenis"}</label>
+              <Select options={typeOptions} value={type} onChange={(e) => setType(e.target.value)} required className="w-full" />
+            </div>
           </div>
 
           <div className="flex items-center justify-between gap-3">
@@ -246,12 +258,30 @@ export default function JournalPage() {
         </div>
 
         <div className="mt-4 grid gap-3 md:grid-cols-2 xl:grid-cols-6">
-          <Input type="date" value={dateFrom} onChange={(e) => setDateFrom(e.target.value)} className="w-full" />
-          <Input type="date" value={dateTo} onChange={(e) => setDateTo(e.target.value)} className="w-full" />
-          <Select options={accountOptions} value={accountCode} onChange={(e) => setAccountCode(e.target.value)} className="w-full" />
-          <Select options={typeOptions} value={typeFilter} onChange={(e) => setTypeFilter(e.target.value)} className="w-full" />
-          <Select options={categoryOptions} value={categoryFilter} onChange={(e) => setCategoryFilter(e.target.value as Journal["category"] | "")} className="w-full" />
-          <Select options={sourceOptions} value={sourceFilter} onChange={(e) => setSourceFilter(e.target.value)} className="w-full" />
+          <div className="space-y-1">
+            <label className="text-xs font-medium text-slate-600">{locale === "en" ? "Date From" : "Tanggal Mulai"}</label>
+            <Input type="date" value={dateFrom} onChange={(e) => setDateFrom(e.target.value)} className="w-full" />
+          </div>
+          <div className="space-y-1">
+            <label className="text-xs font-medium text-slate-600">{locale === "en" ? "Date To" : "Tanggal Akhir"}</label>
+            <Input type="date" value={dateTo} onChange={(e) => setDateTo(e.target.value)} className="w-full" />
+          </div>
+          <div className="space-y-1">
+            <label className="text-xs font-medium text-slate-600">{locale === "en" ? "Account" : "Akun"}</label>
+            <Select options={accountOptions} value={accountCode} onChange={(e) => setAccountCode(e.target.value)} className="w-full" />
+          </div>
+          <div className="space-y-1">
+            <label className="text-xs font-medium text-slate-600">{locale === "en" ? "Type" : "Jenis"}</label>
+            <Select options={typeOptions} value={typeFilter} onChange={(e) => setTypeFilter(e.target.value)} className="w-full" />
+          </div>
+          <div className="space-y-1">
+            <label className="text-xs font-medium text-slate-600">{locale === "en" ? "Category" : "Kategori"}</label>
+            <Select options={categoryOptions} value={categoryFilter} onChange={(e) => setCategoryFilter(e.target.value as Journal["category"] | "")} className="w-full" />
+          </div>
+          <div className="space-y-1">
+            <label className="text-xs font-medium text-slate-600">{locale === "en" ? "Source" : "Sumber"}</label>
+            <Select options={sourceOptions} value={sourceFilter} onChange={(e) => setSourceFilter(e.target.value)} className="w-full" />
+          </div>
         </div>
       </section>
 

@@ -36,10 +36,22 @@ export default function RegisterPage() {
         {locale === "en" ? "Create a new account for ERP dashboard access." : "Buat akun baru untuk akses dashboard ERP."}
       </p>
       <form onSubmit={handleRegister} className="mt-5 space-y-4">
-        <Input type="text" placeholder={locale === "en" ? "Username" : "Username"} value={username} onChange={e => setUsername(e.target.value)} className="w-full" />
-        <Input type="email" placeholder={locale === "en" ? "Email" : "Email"} value={email} onChange={e => setEmail(e.target.value)} className="w-full" />
-        <Input type="password" placeholder={locale === "en" ? "Password" : "Password"} value={password} onChange={e => setPassword(e.target.value)} className="w-full" />
-        <Input type="text" placeholder={locale === "en" ? "WhatsApp Number" : "No. WhatsApp"} value={wa} onChange={e => setWa(e.target.value)} className="w-full" />
+        <div className="space-y-1">
+          <label className="text-xs font-medium text-slate-600">{locale === "en" ? "Username" : "Username"}</label>
+          <Input type="text" placeholder={locale === "en" ? "Username" : "Username"} value={username} onChange={e => setUsername(e.target.value)} className="w-full" />
+        </div>
+        <div className="space-y-1">
+          <label className="text-xs font-medium text-slate-600">{locale === "en" ? "Email" : "Email"}</label>
+          <Input type="email" placeholder={locale === "en" ? "Email" : "Email"} value={email} onChange={e => setEmail(e.target.value)} className="w-full" />
+        </div>
+        <div className="space-y-1">
+          <label className="text-xs font-medium text-slate-600">{locale === "en" ? "Password" : "Password"}</label>
+          <Input type="password" placeholder={locale === "en" ? "Password" : "Password"} value={password} onChange={e => setPassword(e.target.value)} className="w-full" />
+        </div>
+        <div className="space-y-1">
+          <label className="text-xs font-medium text-slate-600">{locale === "en" ? "WhatsApp Number" : "No. WhatsApp"}</label>
+          <Input type="text" placeholder={locale === "en" ? "WhatsApp Number" : "No. WhatsApp"} value={wa} onChange={e => setWa(e.target.value)} className="w-full" />
+        </div>
         <Button type="submit" disabled={loading} className="w-full">{loading ? (locale === "en" ? "Loading..." : "Memuat...") : (locale === "en" ? "Register" : "Daftar")}</Button>
         {msg && <p className="text-sm text-slate-700">{msg}</p>}
       </form>

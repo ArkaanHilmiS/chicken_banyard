@@ -226,19 +226,58 @@ export default function MasterDataPage() {
 
         <form onSubmit={handleSubmit} className="mt-4 space-y-3">
           <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
-            <Select options={partyTypeOptions} value={partyType} onChange={(e) => setPartyType(e.target.value as MasterParty["party_type"] | "")} required className="w-full" />
-            <Input value={name} onChange={(e) => setName(e.target.value)} placeholder={`${t.form.name} *`} className="w-full" required />
-            <Input value={email} onChange={(e) => setEmail(e.target.value)} placeholder={`${t.form.email} *`} className="w-full" required />
-            <Input value={phone} onChange={(e) => setPhone(e.target.value)} placeholder={`${t.form.phone} *`} className="w-full" required />
-            <Input value={npwp} onChange={(e) => setNpwp(e.target.value)} placeholder={`${t.form.npwp} *`} className="w-full" required />
-            <Input value={bankName} onChange={(e) => setBankName(e.target.value)} placeholder={`${t.form.bankName} *`} className="w-full" required />
-            <Input value={bankAccountNumber} onChange={(e) => setBankAccountNumber(e.target.value)} placeholder={`${t.form.bankAccountNumber} *`} className="w-full" required />
-            <Input value={bankAccountName} onChange={(e) => setBankAccountName(e.target.value)} placeholder={`${t.form.bankAccountName} *`} className="w-full" required />
-            <Select options={paymentMethodOptions} value={preferredPaymentMethod} onChange={(e) => setPreferredPaymentMethod(e.target.value as "cash" | "qris" | "")} required className="w-full" />
-            <Select options={transactionMethodOptions} value={preferredTransactionMethod} onChange={(e) => setPreferredTransactionMethod(e.target.value as "cash-in" | "cash-out" | "transfer" | "hybrid" | "")} required className="w-full" />
-            <Select options={statusOptions} value={isActive} onChange={(e) => setIsActive(e.target.value)} required className="w-full" />
-            <Input value={address} onChange={(e) => setAddress(e.target.value)} placeholder={`${t.form.address} *`} className="w-full xl:col-span-2" required />
-            <Input value={notes} onChange={(e) => setNotes(e.target.value)} placeholder={`${t.form.notes} *`} className="w-full xl:col-span-2" required />
+            <div className="space-y-1">
+              <label className="text-xs font-medium text-slate-600">{t.form.partyType}</label>
+              <Select options={partyTypeOptions} value={partyType} onChange={(e) => setPartyType(e.target.value as MasterParty["party_type"] | "")} required className="w-full" />
+            </div>
+            <div className="space-y-1">
+              <label className="text-xs font-medium text-slate-600">{t.form.name}</label>
+              <Input value={name} onChange={(e) => setName(e.target.value)} placeholder={`${t.form.name} *`} className="w-full" required />
+            </div>
+            <div className="space-y-1">
+              <label className="text-xs font-medium text-slate-600">{t.form.email}</label>
+              <Input value={email} onChange={(e) => setEmail(e.target.value)} placeholder={`${t.form.email} *`} className="w-full" required />
+            </div>
+            <div className="space-y-1">
+              <label className="text-xs font-medium text-slate-600">{t.form.phone}</label>
+              <Input value={phone} onChange={(e) => setPhone(e.target.value)} placeholder={`${t.form.phone} *`} className="w-full" required />
+            </div>
+            <div className="space-y-1">
+              <label className="text-xs font-medium text-slate-600">{t.form.npwp}</label>
+              <Input value={npwp} onChange={(e) => setNpwp(e.target.value)} placeholder={`${t.form.npwp} *`} className="w-full" required />
+            </div>
+            <div className="space-y-1">
+              <label className="text-xs font-medium text-slate-600">{t.form.bankName}</label>
+              <Input value={bankName} onChange={(e) => setBankName(e.target.value)} placeholder={`${t.form.bankName} *`} className="w-full" required />
+            </div>
+            <div className="space-y-1">
+              <label className="text-xs font-medium text-slate-600">{t.form.bankAccountNumber}</label>
+              <Input value={bankAccountNumber} onChange={(e) => setBankAccountNumber(e.target.value)} placeholder={`${t.form.bankAccountNumber} *`} className="w-full" required />
+            </div>
+            <div className="space-y-1">
+              <label className="text-xs font-medium text-slate-600">{t.form.bankAccountName}</label>
+              <Input value={bankAccountName} onChange={(e) => setBankAccountName(e.target.value)} placeholder={`${t.form.bankAccountName} *`} className="w-full" required />
+            </div>
+            <div className="space-y-1">
+              <label className="text-xs font-medium text-slate-600">{t.form.paymentMethod}</label>
+              <Select options={paymentMethodOptions} value={preferredPaymentMethod} onChange={(e) => setPreferredPaymentMethod(e.target.value as "cash" | "qris" | "")} required className="w-full" />
+            </div>
+            <div className="space-y-1">
+              <label className="text-xs font-medium text-slate-600">{t.form.transactionMethod}</label>
+              <Select options={transactionMethodOptions} value={preferredTransactionMethod} onChange={(e) => setPreferredTransactionMethod(e.target.value as "cash-in" | "cash-out" | "transfer" | "hybrid" | "")} required className="w-full" />
+            </div>
+            <div className="space-y-1">
+              <label className="text-xs font-medium text-slate-600">{t.form.status}</label>
+              <Select options={statusOptions} value={isActive} onChange={(e) => setIsActive(e.target.value)} required className="w-full" />
+            </div>
+            <div className="space-y-1 xl:col-span-2">
+              <label className="text-xs font-medium text-slate-600">{t.form.address}</label>
+              <Input value={address} onChange={(e) => setAddress(e.target.value)} placeholder={`${t.form.address} *`} className="w-full" required />
+            </div>
+            <div className="space-y-1 xl:col-span-2">
+              <label className="text-xs font-medium text-slate-600">{t.form.notes}</label>
+              <Input value={notes} onChange={(e) => setNotes(e.target.value)} placeholder={`${t.form.notes} *`} className="w-full" required />
+            </div>
           </div>
 
           <div className="flex items-center justify-between gap-3">

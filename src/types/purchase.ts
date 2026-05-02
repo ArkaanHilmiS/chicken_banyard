@@ -1,5 +1,6 @@
 export interface Purchase {
   id: string
+  po_number?: string
   purchase_date: string
   vendor_name: string
   item_id: string

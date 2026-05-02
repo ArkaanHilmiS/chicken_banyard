@@ -32,7 +32,6 @@ const menuSections = [
     items: [
       { href: "/master-data", label: { id: "Master Data", en: "Master Data" } },
       { href: "/item-master", label: { id: "Master Item", en: "Item Master" } },
-      { href: "/price-master", label: { id: "Master Harga", en: "Price Master" } },
       { href: "/uom-master", label: { id: "Master UoM", en: "UoM Master" } },
       { href: "/coa", label: { id: "COA", en: "COA" } },
     ],

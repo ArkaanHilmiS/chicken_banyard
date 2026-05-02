@@ -4,21 +4,120 @@ import Link from "next/link";
 import { useOfflineStore } from "@/lib/offlineStore";
 
 export default function DashboardPage() {
+  const orders = useOfflineStore((state) => state.orders);
+  const purchases = useOfflineStore((state) => state.purchases);
+  const payments = useOfflineStore((state) => state.payments);
+  const goodsReceipts = useOfflineStore((state) => state.goodsReceipts);
   const locale = useOfflineStore((state) => state.locale);
+  const numberLocale = locale === "en" ? "en-US" : "id-ID";
+  const today = new Date().toISOString().slice(0, 10);
+
+  const getDirection = (payment: { order_id: string; payment_direction?: "incoming" | "outgoing" }) => {
+    if (payment.payment_direction) return payment.payment_direction;
+    return payment.order_id ? "incoming" : "outgoing";
+  };
+
+  const todayOrders = orders.filter((order) => order.order_date === today);
+  const todayIncomingPayments = payments.filter(
+    (payment) => payment.payment_date === today && payment.is_paid && getDirection(payment) === "incoming",
+  );
+  const todayOutgoingPayments = payments.filter(
+    (payment) => payment.payment_date === today && payment.is_paid && getDirection(payment) === "outgoing",
+  );
+  const pendingPurchases = purchases.filter((purchase) => purchase.payment_status !== "paid");
+  const dailyRevenue = todayIncomingPayments.reduce((sum, payment) => sum + payment.amount, 0);
+  const dailyExpenses = todayOutgoingPayments.reduce((sum, payment) => sum + payment.amount, 0);
+  const pendingPurchasesTotal = pendingPurchases.reduce((sum, purchase) => sum + purchase.total_price, 0);
 
   const kpis = locale === "en"
     ? [
-      { label: "Today Orders", value: "24", delta: "+12%" },
-      { label: "Daily Revenue", value: "Rp 8.450.000", delta: "+8%" },
-      { label: "Operational Expenses", value: "Rp 2.130.000", delta: "Electricity, water, feed" },
-      { label: "Pending Purchases", value: "Rp 1.900.000", delta: "3 PO" },
+      { label: "Today Orders", value: String(todayOrders.length), delta: `${todayOrders.length} orders` },
+      { label: "Daily Revenue", value: `Rp ${dailyRevenue.toLocaleString(numberLocale)}`, delta: `${todayIncomingPayments.length} payments` },
+      { label: "Operational Expenses", value: `Rp ${dailyExpenses.toLocaleString(numberLocale)}`, delta: `${todayOutgoingPayments.length} payments` },
+      { label: "Pending Purchases", value: `Rp ${pendingPurchasesTotal.toLocaleString(numberLocale)}`, delta: `${pendingPurchases.length} PO` },
     ]
     : [
-      { label: "Order Hari Ini", value: "24", delta: "+12%" },
-      { label: "Pendapatan Harian", value: "Rp 8.450.000", delta: "+8%" },
-      { label: "Biaya Operasional", value: "Rp 2.130.000", delta: "Listrik, air, pakan" },
-      { label: "Pembelian Pending", value: "Rp 1.900.000", delta: "3 PO" },
+      { label: "Order Hari Ini", value: String(todayOrders.length), delta: `${todayOrders.length} order` },
+      { label: "Pendapatan Harian", value: `Rp ${dailyRevenue.toLocaleString(numberLocale)}`, delta: `${todayIncomingPayments.length} pembayaran` },
+      { label: "Biaya Operasional", value: `Rp ${dailyExpenses.toLocaleString(numberLocale)}`, delta: `${todayOutgoingPayments.length} pembayaran` },
+      { label: "Pembelian Pending", value: `Rp ${pendingPurchasesTotal.toLocaleString(numberLocale)}`, delta: `${pendingPurchases.length} PO` },
     ];
+
+  const statusToneClass = (tone: "good" | "warn" | "neutral" | "danger") => {
+    if (tone === "good") return "bg-emerald-100 text-emerald-800";
+    if (tone === "warn") return "bg-amber-100 text-amber-800";
+    if (tone === "danger") return "bg-rose-100 text-rose-800";
+    return "bg-slate-100 text-slate-700";
+  };
+
+  const queueRows = [
+    ...orders.map((order) => {
+      const statusLabel = (() => {
+        if (order.order_status === "delivered") return locale === "en" ? "Delivered" : "Terkirim";
+        if (order.order_status === "cancelled") return locale === "en" ? "Cancelled" : "Dibatalkan";
+        if (order.order_status === "paid") return locale === "en" ? "Paid" : "Paid";
+        return locale === "en" ? "Pending" : "Pending";
+      })();
+      const tone = order.order_status === "delivered"
+        ? "good"
+        : order.order_status === "cancelled"
+          ? "danger"
+          : "warn";
+
+      return {
+        id: order.so_number || order.id,
+        partner: order.address || "-",
+        type: locale === "en" ? "Sales" : "Sales",
+        status: statusLabel,
+        tone,
+        date: order.order_date,
+      };
+    }),
+    ...purchases.map((purchase) => {
+      const statusLabel = (() => {
+        if (purchase.payment_status === "paid") return locale === "en" ? "Paid" : "Lunas";
+        if (purchase.payment_status === "partial") return locale === "en" ? "Partial" : "Parsial";
+        return locale === "en" ? "Pending" : "Pending";
+      })();
+      const tone = purchase.payment_status === "paid"
+        ? "good"
+        : purchase.payment_status === "partial"
+          ? "warn"
+          : "neutral";
+
+      return {
+        id: purchase.po_number || purchase.id,
+        partner: purchase.vendor_name || "-",
+        type: locale === "en" ? "Purchase" : "Purchase",
+        status: statusLabel,
+        tone,
+        date: purchase.purchase_date,
+      };
+    }),
+    ...goodsReceipts.map((receipt) => {
+      const statusLabel = (() => {
+        if (receipt.condition === "damaged") return locale === "en" ? "Damaged" : "Rusak";
+        if (receipt.condition === "partial") return locale === "en" ? "Partial" : "Parsial";
+        return locale === "en" ? "Good" : "Baik";
+      })();
+      const tone = receipt.condition === "damaged"
+        ? "danger"
+        : receipt.condition === "partial"
+          ? "warn"
+          : "good";
+
+      return {
+        id: receipt.id,
+        partner: receipt.vendor_name || "-",
+        type: locale === "en" ? "Goods Receipt" : "Goods Receipt",
+        status: statusLabel,
+        tone,
+        date: receipt.receipt_date,
+      };
+    }),
+  ]
+    .sort((a, b) => b.date.localeCompare(a.date))
+    .slice(0, 6);
 
   const quickActions = locale === "en"
     ? [
@@ -64,24 +163,26 @@ export default function DashboardPage() {
                 </tr>
               </thead>
               <tbody className="text-slate-700">
-                <tr className="border-t border-slate-100">
-                  <td className="py-3">SO-240301</td>
-                  <td className="py-3">Toko Kuning</td>
-                  <td className="py-3">{locale === "en" ? "Sales" : "Sales"}</td>
-                  <td className="py-3"><span className="rounded-full bg-amber-100 px-2 py-1 text-xs font-semibold text-amber-800">{locale === "en" ? "Ready to Ship" : "Siap Kirim"}</span></td>
-                </tr>
-                <tr className="border-t border-slate-100">
-                  <td className="py-3">PO-240115</td>
-                  <td className="py-3">PLN</td>
-                  <td className="py-3">{locale === "en" ? "Utility" : "Utility"}</td>
-                  <td className="py-3"><span className="rounded-full bg-slate-100 px-2 py-1 text-xs font-semibold text-slate-700">{locale === "en" ? "Awaiting Payment" : "Menunggu Bayar"}</span></td>
-                </tr>
-                <tr className="border-t border-slate-100">
-                  <td className="py-3">GR-240057</td>
-                  <td className="py-3">CV Pakan Jaya</td>
-                  <td className="py-3">Goods Receipt</td>
-                  <td className="py-3"><span className="rounded-full bg-emerald-100 px-2 py-1 text-xs font-semibold text-emerald-800">{locale === "en" ? "Posted to Stock" : "Posted ke Stok"}</span></td>
-                </tr>
+                {queueRows.length === 0 ? (
+                  <tr className="border-t border-slate-100">
+                    <td className="py-3 text-slate-500" colSpan={4}>
+                      {locale === "en" ? "No operations yet." : "Belum ada aktivitas."}
+                    </td>
+                  </tr>
+                ) : (
+                  queueRows.map((row) => (
+                    <tr key={`${row.id}-${row.type}`} className="border-t border-slate-100">
+                      <td className="py-3">{row.id}</td>
+                      <td className="py-3">{row.partner}</td>
+                      <td className="py-3">{row.type}</td>
+                      <td className="py-3">
+                        <span className={`rounded-full px-2 py-1 text-xs font-semibold ${statusToneClass(row.tone)}`}>
+                          {row.status}
+                        </span>
+                      </td>
+                    </tr>
+                  ))
+                )}
               </tbody>
             </table>
           </div>

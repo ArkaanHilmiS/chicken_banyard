@@ -34,8 +34,11 @@ export default function PricePage() {
         </div>
       </div>
 
-      <form onSubmit={handleAddPrice} className="mb-4 flex flex-wrap items-center gap-3">
-        <Input type="number" min={1} value={pricePerKg} onChange={(e) => setPricePerKg(e.target.value)} placeholder={locale === "en" ? "Price / Kg" : "Harga / Kg"} className="w-full max-w-xs" required />
+      <form onSubmit={handleAddPrice} className="mb-4 flex flex-wrap items-end gap-3">
+        <div className="w-full max-w-xs space-y-1">
+          <label className="text-xs font-medium text-slate-600">{locale === "en" ? "Price / Kg" : "Harga / Kg"}</label>
+          <Input type="number" min={1} value={pricePerKg} onChange={(e) => setPricePerKg(e.target.value)} placeholder={locale === "en" ? "Price / Kg" : "Harga / Kg"} className="w-full" required />
+        </div>
         <Button type="submit">{locale === "en" ? "+ Add Price" : "+ Tambah Harga"}</Button>
       </form>
 

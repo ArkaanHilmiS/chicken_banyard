@@ -13,7 +13,6 @@ const pageLabels: Record<string, { id: string; en: string }> = {
   "/goods-receipt": { id: "Penerimaan", en: "Goods Receipt" },
   "/master-data": { id: "Master Data", en: "Master Data" },
   "/item-master": { id: "Master Item", en: "Item Master" },
-  "/price-master": { id: "Master Harga", en: "Price Master" },
   "/uom-master": { id: "Master UoM", en: "UoM Master" },
   "/stock": { id: "Stok", en: "Inventory" },
   "/price": { id: "Harga", en: "Pricing" },

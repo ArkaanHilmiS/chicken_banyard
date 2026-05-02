@@ -148,15 +148,42 @@ export default function ItemMasterPage() {
 
         <form onSubmit={handleSubmit} className="mt-4 space-y-3">
           <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
-            <Input value={sku} onChange={(e) => setSku(e.target.value)} placeholder={t.form.sku} className="w-full" required />
-            <Input value={name} onChange={(e) => setName(e.target.value)} placeholder={t.form.name} className="w-full" required />
-            <Select options={categoryOptions} value={category} onChange={(e) => setCategory(e.target.value)} required className="w-full" />
-            <Select options={uomOptions} value={defaultUom} onChange={(e) => setDefaultUom(e.target.value)} required className="w-full" />
-            <Input type="number" min={0} value={purchasePrice} onChange={(e) => setPurchasePrice(e.target.value)} placeholder={t.form.purchasePrice} className="w-full" required />
-            <Input type="number" min={0} value={sellingPrice} onChange={(e) => setSellingPrice(e.target.value)} placeholder={t.form.sellingPrice} className="w-full" required />
-            <Input type="number" min={0} value={minStock} onChange={(e) => setMinStock(e.target.value)} placeholder={t.form.minStock} className="w-full" required />
-            <Select options={statusOptions} value={isActive} onChange={(e) => setIsActive(e.target.value)} required className="w-full" />
-            <Input value={description} onChange={(e) => setDescription(e.target.value)} placeholder={t.form.description} className="w-full" />
+            <div className="space-y-1">
+              <label className="text-xs font-medium text-slate-600">{t.form.sku}</label>
+              <Input value={sku} onChange={(e) => setSku(e.target.value)} placeholder={t.form.sku} className="w-full" required />
+            </div>
+            <div className="space-y-1">
+              <label className="text-xs font-medium text-slate-600">{t.form.name}</label>
+              <Input value={name} onChange={(e) => setName(e.target.value)} placeholder={t.form.name} className="w-full" required />
+            </div>
+            <div className="space-y-1">
+              <label className="text-xs font-medium text-slate-600">{t.form.category}</label>
+              <Select options={categoryOptions} value={category} onChange={(e) => setCategory(e.target.value)} required className="w-full" />
+            </div>
+            <div className="space-y-1">
+              <label className="text-xs font-medium text-slate-600">{t.form.uom}</label>
+              <Select options={uomOptions} value={defaultUom} onChange={(e) => setDefaultUom(e.target.value)} required className="w-full" />
+            </div>
+            <div className="space-y-1">
+              <label className="text-xs font-medium text-slate-600">{t.form.purchasePrice}</label>
+              <Input type="number" min={0} value={purchasePrice} onChange={(e) => setPurchasePrice(e.target.value)} placeholder={t.form.purchasePrice} className="w-full" required />
+            </div>
+            <div className="space-y-1">
+              <label className="text-xs font-medium text-slate-600">{t.form.sellingPrice}</label>
+              <Input type="number" min={0} value={sellingPrice} onChange={(e) => setSellingPrice(e.target.value)} placeholder={t.form.sellingPrice} className="w-full" required />
+            </div>
+            <div className="space-y-1">
+              <label className="text-xs font-medium text-slate-600">{t.form.minStock}</label>
+              <Input type="number" min={0} value={minStock} onChange={(e) => setMinStock(e.target.value)} placeholder={t.form.minStock} className="w-full" required />
+            </div>
+            <div className="space-y-1">
+              <label className="text-xs font-medium text-slate-600">{t.form.status}</label>
+              <Select options={statusOptions} value={isActive} onChange={(e) => setIsActive(e.target.value)} required className="w-full" />
+            </div>
+            <div className="space-y-1">
+              <label className="text-xs font-medium text-slate-600">{t.form.description}</label>
+              <Input value={description} onChange={(e) => setDescription(e.target.value)} placeholder={t.form.description} className="w-full" />
+            </div>
           </div>
 
           <div className="flex items-center justify-between gap-3">

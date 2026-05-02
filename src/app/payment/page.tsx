@@ -203,12 +203,30 @@ export default function PaymentPage() {
           </div>
 
           <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
-            <Select options={directionOptions} value={direction} onChange={(e) => onDirectionChange(e.target.value as "incoming" | "outgoing" | "")} required className="w-full" />
-            <Select options={referenceOptions} value={referenceId} onChange={(e) => onReferenceChange(e.target.value)} className="w-full" />
-            <Select options={paymentForOptions} value={paymentFor} onChange={(e) => setPaymentFor(e.target.value as NonNullable<Payment["payment_for"]> | "")} required className="w-full" />
-            <Select options={partyOptions} value={partyId} onChange={(e) => onPartyChange(e.target.value)} className="w-full" />
-            <Select options={methodOptions} value={method} onChange={(e) => setMethod(e.target.value as Payment["payment_method"] | "")} required className="w-full" />
-            <Input type="number" min={1} value={amount} onChange={(e) => setAmount(e.target.value)} placeholder={locale === "en" ? "Amount" : "Nominal"} className="w-full" required />
+            <div className="space-y-1">
+              <label className="text-xs font-medium text-slate-600">{locale === "en" ? "Direction" : "Arah"}</label>
+              <Select options={directionOptions} value={direction} onChange={(e) => onDirectionChange(e.target.value as "incoming" | "outgoing" | "")} required className="w-full" />
+            </div>
+            <div className="space-y-1">
+              <label className="text-xs font-medium text-slate-600">{locale === "en" ? "Reference" : "Referensi"}</label>
+              <Select options={referenceOptions} value={referenceId} onChange={(e) => onReferenceChange(e.target.value)} className="w-full" />
+            </div>
+            <div className="space-y-1">
+              <label className="text-xs font-medium text-slate-600">{locale === "en" ? "Payment For" : "Untuk"}</label>
+              <Select options={paymentForOptions} value={paymentFor} onChange={(e) => setPaymentFor(e.target.value as NonNullable<Payment["payment_for"]> | "")} required className="w-full" />
+            </div>
+            <div className="space-y-1">
+              <label className="text-xs font-medium text-slate-600">{locale === "en" ? "Vendor/Customer" : "Vendor/Pelanggan"}</label>
+              <Select options={partyOptions} value={partyId} onChange={(e) => onPartyChange(e.target.value)} className="w-full" />
+            </div>
+            <div className="space-y-1">
+              <label className="text-xs font-medium text-slate-600">{locale === "en" ? "Method" : "Metode"}</label>
+              <Select options={methodOptions} value={method} onChange={(e) => setMethod(e.target.value as Payment["payment_method"] | "")} required className="w-full" />
+            </div>
+            <div className="space-y-1">
+              <label className="text-xs font-medium text-slate-600">{locale === "en" ? "Amount" : "Nominal"}</label>
+              <Input type="number" min={1} value={amount} onChange={(e) => setAmount(e.target.value)} placeholder={locale === "en" ? "Amount" : "Nominal"} className="w-full" required />
+            </div>
           </div>
 
           <div className="flex items-center justify-between gap-3">

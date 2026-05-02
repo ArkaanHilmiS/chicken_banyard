@@ -70,7 +70,7 @@ export default function StockPage() {
     return summary;
   }, [goodsReceipts]);
 
-  const orderedByItem = useMemo(() => {
+  const committedByItem = useMemo(() => {
     const summary = new Map<string, number>();
     for (const order of orders) {
       if (order.order_status === "cancelled" || order.order_status === "delivered") continue;
@@ -79,7 +79,7 @@ export default function StockPage() {
     return summary;
   }, [orders]);
 
-  const committedByItem = useMemo(() => {
+  const orderedByItem = useMemo(() => {
     const summary = new Map<string, number>();
     for (const purchase of purchases) {
       const received = purchase.id ? receivedByPurchase.get(purchase.id) || 0 : 0;
@@ -109,17 +109,21 @@ export default function StockPage() {
         const onHand = onHandByItem.get(item.id)?.onHand ?? 0;
         const ordered = orderedByItem.get(item.id) || 0;
         const committed = committedByItem.get(item.id) || 0;
-        const available = onHand - ordered;
+        const available = onHand - committed + ordered;
+        const isLow = available < item.min_stock;
 
         return {
           itemName: item.name,
           unit: item.default_uom,
-          inStock: available,
+          inStock: onHand,
           ordered,
           committed,
+          available,
+          minStock: item.min_stock,
+          isLow,
         };
       })
-      .filter((row) => row.inStock !== 0 || row.ordered !== 0 || row.committed !== 0)
+        .filter((row) => row.inStock !== 0 || row.ordered !== 0 || row.committed !== 0 || row.available !== 0)
       .sort((a, b) => a.itemName.localeCompare(b.itemName));
   }, [items, stocks, orderedByItem, committedByItem]);
 
@@ -151,11 +155,26 @@ export default function StockPage() {
       </div>
 
       <form onSubmit={handleAddStock} className="mb-4 grid gap-3 md:grid-cols-2 xl:grid-cols-5">
-        <Select options={itemOptions} value={itemId} onChange={(e) => setItemId(e.target.value)} required className="w-full" />
-        <Select options={warehouseOptions} value={warehouseId} onChange={(e) => setWarehouseId(e.target.value)} required className="w-full" />
-        <Input type="number" min={1} value={quantity} onChange={(e) => setQuantity(e.target.value)} placeholder={locale === "en" ? "Quantity" : "Jumlah"} className="w-full" required />
-        <Select options={stockTypeOptions} value={stockType} onChange={(e) => setStockType(e.target.value as Stock["stock_type"] | "")} required className="w-full" />
-        <Input value={orderId} onChange={(e) => setOrderId(e.target.value)} placeholder={locale === "en" ? "Order ID (optional)" : "Order ID (opsional)"} className="w-full" />
+        <div className="space-y-1">
+          <label className="text-xs font-medium text-slate-600">{locale === "en" ? "Item" : "Item"}</label>
+          <Select options={itemOptions} value={itemId} onChange={(e) => setItemId(e.target.value)} required className="w-full" />
+        </div>
+        <div className="space-y-1">
+          <label className="text-xs font-medium text-slate-600">{locale === "en" ? "Warehouse" : "Gudang"}</label>
+          <Select options={warehouseOptions} value={warehouseId} onChange={(e) => setWarehouseId(e.target.value)} required className="w-full" />
+        </div>
+        <div className="space-y-1">
+          <label className="text-xs font-medium text-slate-600">{locale === "en" ? "Quantity" : "Jumlah"}</label>
+          <Input type="number" min={1} value={quantity} onChange={(e) => setQuantity(e.target.value)} placeholder={locale === "en" ? "Quantity" : "Jumlah"} className="w-full" required />
+        </div>
+        <div className="space-y-1">
+          <label className="text-xs font-medium text-slate-600">{locale === "en" ? "Stock Type" : "Jenis Stok"}</label>
+          <Select options={stockTypeOptions} value={stockType} onChange={(e) => setStockType(e.target.value as Stock["stock_type"] | "")} required className="w-full" />
+        </div>
+        <div className="space-y-1">
+          <label className="text-xs font-medium text-slate-600">{locale === "en" ? "Order ID" : "Order ID"}</label>
+          <Input value={orderId} onChange={(e) => setOrderId(e.target.value)} placeholder={locale === "en" ? "Order ID (optional)" : "Order ID (opsional)"} className="w-full" />
+        </div>
         <Button type="submit">{locale === "en" ? "+ Add Stock" : "+ Tambah Stock"}</Button>
       </form>
 
@@ -169,8 +188,8 @@ export default function StockPage() {
         <h2 className="text-sm font-semibold text-slate-900">{locale === "en" ? "Stock Status Summary" : "Ringkasan Status Stok"}</h2>
         <p className="mt-1 text-xs text-slate-500">
           {locale === "en"
-            ? "In Stock is reduced by ordered quantities. Committed comes from purchase orders not yet received."
-            : "In Stock sudah dikurangi pesanan (Ordered). Committed berasal dari PO yang belum diterima."}
+            ? "Available = In Stock - Committed + Ordered. Committed comes from sales orders not delivered. Ordered comes from PO not yet received."
+            : "Available = In Stock - Committed + Ordered. Committed berasal dari sales order yang belum terkirim. Ordered berasal dari PO yang belum diterima."}
         </p>
         <div className="mt-3 overflow-x-auto">
           <table className="w-full text-sm">
@@ -178,23 +197,33 @@ export default function StockPage() {
               <tr>
                 <th className="p-2">{locale === "en" ? "Item" : "Item"}</th>
                 <th className="p-2">{locale === "en" ? "In Stock" : "In Stock"}</th>
-                <th className="p-2">{locale === "en" ? "Ordered" : "Ordered"}</th>
                 <th className="p-2">{locale === "en" ? "Committed" : "Committed"}</th>
+                <th className="p-2">{locale === "en" ? "Ordered" : "Ordered"}</th>
+                <th className="p-2">{locale === "en" ? "Available" : "Available"}</th>
+                <th className="p-2">{locale === "en" ? "Min" : "Min"}</th>
+                <th className="p-2">{locale === "en" ? "Status" : "Status"}</th>
                 <th className="p-2">{locale === "en" ? "Unit" : "Unit"}</th>
               </tr>
             </thead>
             <tbody className="text-slate-700">
               {stockStatusSummary.length === 0 ? (
                 <tr>
-                  <td className="p-2 text-slate-500" colSpan={5}>{locale === "en" ? "No stock movement yet." : "Belum ada pergerakan stok."}</td>
+                  <td className="p-2 text-slate-500" colSpan={8}>{locale === "en" ? "No stock movement yet." : "Belum ada pergerakan stok."}</td>
                 </tr>
               ) : (
                 stockStatusSummary.map((row) => (
-                  <tr key={row.itemName} className="border-t border-slate-200">
+                  <tr key={row.itemName} className={`border-t ${row.isLow ? "border-rose-200 bg-rose-50" : "border-slate-200"}`}>
                     <td className="p-2">{row.itemName}</td>
                     <td className="p-2">{row.inStock}</td>
-                    <td className="p-2">{row.ordered}</td>
                     <td className="p-2">{row.committed}</td>
+                    <td className="p-2">{row.ordered}</td>
+                    <td className="p-2">{row.available}</td>
+                    <td className="p-2">{row.minStock}</td>
+                    <td className="p-2">
+                      <span className={row.isLow ? "font-semibold text-rose-700" : "text-emerald-700"}>
+                        {row.isLow ? (locale === "en" ? "Below Min" : "Di bawah minimum") : (locale === "en" ? "OK" : "Aman")}
+                      </span>
+                    </td>
                     <td className="p-2">{row.unit}</td>
                   </tr>
                 ))

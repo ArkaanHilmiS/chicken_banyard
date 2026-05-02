@@ -1,5 +1,6 @@
 export interface Order {
   id: string
+  so_number?: string
   user_id: string
   order_date: string
   item_id: string

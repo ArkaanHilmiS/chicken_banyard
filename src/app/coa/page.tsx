@@ -69,10 +69,22 @@ export default function CoaPage() {
 
         <form onSubmit={handleSubmit} className="mt-4 space-y-3">
           <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
-            <Input value={code} onChange={(e) => setCode(e.target.value)} placeholder={locale === "en" ? "Account code" : "Kode akun"} className="w-full" required />
-            <Input value={name} onChange={(e) => setName(e.target.value)} placeholder={locale === "en" ? "Account name" : "Nama akun"} className="w-full" required />
-            <Select options={categoryOptions} value={category} onChange={(e) => setCategory(e.target.value as ChartOfAccount["category"] | "")} required className="w-full" />
-            <Select options={statusOptions} value={isActive} onChange={(e) => setIsActive(e.target.value)} className="w-full" />
+            <div className="space-y-1">
+              <label className="text-xs font-medium text-slate-600">{locale === "en" ? "Account Code" : "Kode Akun"}</label>
+              <Input value={code} onChange={(e) => setCode(e.target.value)} placeholder={locale === "en" ? "Account code" : "Kode akun"} className="w-full" required />
+            </div>
+            <div className="space-y-1">
+              <label className="text-xs font-medium text-slate-600">{locale === "en" ? "Account Name" : "Nama Akun"}</label>
+              <Input value={name} onChange={(e) => setName(e.target.value)} placeholder={locale === "en" ? "Account name" : "Nama akun"} className="w-full" required />
+            </div>
+            <div className="space-y-1">
+              <label className="text-xs font-medium text-slate-600">{locale === "en" ? "Category" : "Kategori"}</label>
+              <Select options={categoryOptions} value={category} onChange={(e) => setCategory(e.target.value as ChartOfAccount["category"] | "")} required className="w-full" />
+            </div>
+            <div className="space-y-1">
+              <label className="text-xs font-medium text-slate-600">{locale === "en" ? "Status" : "Status"}</label>
+              <Select options={statusOptions} value={isActive} onChange={(e) => setIsActive(e.target.value)} className="w-full" />
+            </div>
           </div>
 
           <div className="flex items-center justify-between gap-3">

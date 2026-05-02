@@ -55,10 +55,22 @@ export default function UomMasterPage() {
 
         <form onSubmit={handleSubmit} className="mt-4 space-y-3">
           <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
-            <Input value={name} onChange={(e) => setName(e.target.value)} placeholder={locale === "en" ? "UoM Name" : "Nama UoM"} className="w-full" required />
-            <Input value={symbol} onChange={(e) => setSymbol(e.target.value)} placeholder={locale === "en" ? "Symbol (kg/sack/ltr)" : "Simbol (kg/sak/ltr)"} className="w-full" required />
-            <Input value={description} onChange={(e) => setDescription(e.target.value)} placeholder={locale === "en" ? "Description" : "Deskripsi"} className="w-full" />
-            <Select options={statusOptions} value={isActive} onChange={(e) => setIsActive(e.target.value)} required className="w-full" />
+            <div className="space-y-1">
+              <label className="text-xs font-medium text-slate-600">{locale === "en" ? "UoM Name" : "Nama UoM"}</label>
+              <Input value={name} onChange={(e) => setName(e.target.value)} placeholder={locale === "en" ? "UoM Name" : "Nama UoM"} className="w-full" required />
+            </div>
+            <div className="space-y-1">
+              <label className="text-xs font-medium text-slate-600">{locale === "en" ? "Symbol" : "Simbol"}</label>
+              <Input value={symbol} onChange={(e) => setSymbol(e.target.value)} placeholder={locale === "en" ? "Symbol (kg/sack/ltr)" : "Simbol (kg/sak/ltr)"} className="w-full" required />
+            </div>
+            <div className="space-y-1">
+              <label className="text-xs font-medium text-slate-600">{locale === "en" ? "Description" : "Deskripsi"}</label>
+              <Input value={description} onChange={(e) => setDescription(e.target.value)} placeholder={locale === "en" ? "Description" : "Deskripsi"} className="w-full" />
+            </div>
+            <div className="space-y-1">
+              <label className="text-xs font-medium text-slate-600">{locale === "en" ? "Status" : "Status"}</label>
+              <Select options={statusOptions} value={isActive} onChange={(e) => setIsActive(e.target.value)} required className="w-full" />
+            </div>
           </div>
 
           <div className="flex items-center justify-between gap-3">

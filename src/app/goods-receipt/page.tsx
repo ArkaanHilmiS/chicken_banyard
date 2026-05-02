@@ -7,6 +7,16 @@ import Select from "@/components/ui/select";
 import { useOfflineStore } from "@/lib/offlineStore";
 import type { GoodsReceipt } from "@/types/goodsReceipt";
 
+const appendSelectedOption = (
+  options: { value: string; label: string }[],
+  value: string,
+  label: string,
+  inactiveLabel: string,
+) => {
+  if (!value || !label || options.some((option) => option.value === value)) return options;
+  return [{ value, label: `${label} (${inactiveLabel})` }, ...options];
+};
+
 export default function GoodsReceiptPage() {
   const receipts = useOfflineStore((state) => state.goodsReceipts);
   const purchases = useOfflineStore((state) => state.purchases);
@@ -15,6 +25,7 @@ export default function GoodsReceiptPage() {
   const uoms = useOfflineStore((state) => state.unitOfMeasures);
   const warehouses = useOfflineStore((state) => state.warehouses);
   const addGoodsReceipt = useOfflineStore((state) => state.addGoodsReceipt);
+  const locale = useOfflineStore((state) => state.locale);
   const [purchaseId, setPurchaseId] = useState("");
   const [vendorName, setVendorName] = useState("");
   const [itemName, setItemName] = useState("");
@@ -27,26 +38,45 @@ export default function GoodsReceiptPage() {
   const [msg, setMsg] = useState("");
 
   const vendorOptions = useMemo(
-    () => parties
-      .filter((party) => party.party_type === "vendor" || party.party_type === "supplier")
-      .map((party) => ({ value: party.id, label: party.name })),
-    [parties],
+    () => appendSelectedOption(
+      parties
+        .filter((party) => party.is_active && (party.party_type === "vendor" || party.party_type === "supplier"))
+        .map((party) => ({ value: party.id, label: party.name })),
+      vendorId,
+      vendorName,
+      locale === "en" ? "Inactive" : "Tidak Aktif",
+    ),
+    [locale, parties, vendorId, vendorName],
   );
 
   const itemOptions = useMemo(
-    () => items.map((item) => ({ value: item.id, label: `${item.sku} - ${item.name}` })),
-    [items],
+    () => appendSelectedOption(
+      items
+        .filter((item) => item.is_active)
+        .map((item) => ({ value: item.id, label: `${item.sku} - ${item.name}` })),
+      itemId,
+      itemName,
+      locale === "en" ? "Inactive" : "Tidak Aktif",
+    ),
+    [itemId, itemName, items, locale],
   );
 
   const unitOptions = useMemo(
-    () => uoms.map((uom) => ({ value: uom.symbol, label: `${uom.name} (${uom.symbol})` })),
-    [uoms],
+    () => appendSelectedOption(
+      uoms
+        .filter((uom) => uom.is_active)
+        .map((uom) => ({ value: uom.symbol, label: `${uom.name} (${uom.symbol})` })),
+      unit,
+      unit,
+      locale === "en" ? "Inactive" : "Tidak Aktif",
+    ),
+    [locale, unit, uoms],
   );
 
   const conditionOptions = [
-    { value: "good", label: "Good" },
-    { value: "partial", label: "Partial" },
-    { value: "damaged", label: "Damaged" },
+    { value: "good", label: locale === "en" ? "Good" : "Baik" },
+    { value: "partial", label: locale === "en" ? "Partial" : "Parsial" },
+    { value: "damaged", label: locale === "en" ? "Damaged" : "Rusak" },
   ];
 
   const warehouseOptions = useMemo(
@@ -66,6 +96,11 @@ export default function GoodsReceiptPage() {
     [purchases],
   );
 
+  const conditionLabel = (value: GoodsReceipt["condition"]) => {
+    const match = conditionOptions.find((option) => option.value === value);
+    return match?.label ?? value;
+  };
+
   const onPurchaseChange = (value: string) => {
     setPurchaseId(value);
     const purchase = purchases.find((row) => row.id === value);
@@ -75,7 +110,11 @@ export default function GoodsReceiptPage() {
     setItemName(purchase.item_name);
     setQuantityReceived(String(purchase.quantity));
     setUnit(purchase.unit);
-    setWarehouseId("WH-002");
+    setWarehouseId(
+      warehouses.find((warehouse) => warehouse.id === "WH-002" && warehouse.is_active)?.id
+      || warehouses.find((warehouse) => warehouse.is_active)?.id
+      || "",
+    );
     setCondition("good");
 
     const selectedVendor = parties.find((party) => party.name.toLowerCase() === purchase.vendor_name.toLowerCase());
@@ -102,7 +141,7 @@ export default function GoodsReceiptPage() {
   const handleAddReceipt = (e: React.FormEvent) => {
     e.preventDefault();
     if (!vendorName || !itemId || !itemName || !quantityReceived || !unit || !warehouseId || !condition) {
-      setMsg("Semua field wajib diisi.");
+      setMsg(locale === "en" ? "All fields are required." : "Semua field wajib diisi.");
       return;
     }
 
@@ -117,7 +156,7 @@ export default function GoodsReceiptPage() {
       condition,
     });
 
-    setMsg("Goods receipt berhasil ditambahkan.");
+    setMsg(locale === "en" ? "Goods receipt added successfully." : "Goods receipt berhasil ditambahkan.");
     setVendorName("");
     setItemName("");
     setPurchaseId("");
@@ -134,23 +173,31 @@ export default function GoodsReceiptPage() {
       <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
         <form onSubmit={handleAddReceipt} className="space-y-4">
           <div>
-            <h1 className="text-xl font-semibold text-slate-900">Goods Receipt</h1>
-            <p className="mt-1 text-sm text-slate-600">Penerimaan barang terintegrasi dengan purchase order, master vendor/supplier, item, unit, dan stok.</p>
+            <h1 className="text-xl font-semibold text-slate-900">{locale === "en" ? "Goods Receipt" : "Goods Receipt"}</h1>
+            <p className="mt-1 text-sm text-slate-600">
+              {locale === "en"
+                ? "Goods receipt is integrated with purchase orders, vendor/supplier master, items, units, and stock."
+                : "Penerimaan barang terintegrasi dengan purchase order, master vendor/supplier, item, unit, dan stok."}
+            </p>
           </div>
 
           <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
             <Select options={pendingPurchaseOptions} value={purchaseId} onChange={(e) => onPurchaseChange(e.target.value)} className="w-full" />
             <Select options={vendorOptions} value={vendorId} onChange={(e) => onVendorChange(e.target.value)} required className="w-full" />
             <Select options={itemOptions} value={itemId} onChange={(e) => onItemChange(e.target.value)} required className="w-full" />
-            <Input type="number" min={1} value={quantityReceived} onChange={(e) => setQuantityReceived(e.target.value)} placeholder="Qty Diterima" className="w-full" required />
+            <Input type="number" min={1} value={quantityReceived} onChange={(e) => setQuantityReceived(e.target.value)} placeholder={locale === "en" ? "Qty Received" : "Qty Diterima"} className="w-full" required />
             <Select options={unitOptions} value={unit} onChange={(e) => setUnit(e.target.value)} required className="w-full" />
             <Select options={warehouseOptions} value={warehouseId} onChange={(e) => setWarehouseId(e.target.value)} required className="w-full" />
             <Select options={conditionOptions} value={condition} onChange={(e) => setCondition(e.target.value as GoodsReceipt["condition"] | "")} required className="w-full" />
           </div>
 
           <div className="flex items-center justify-between gap-3">
-            <Button type="submit">+ Buat GRN</Button>
-            {msg && <p className="text-sm text-emerald-700">{msg}</p>}
+            <Button type="submit">{locale === "en" ? "+ Create GRN" : "+ Buat GRN"}</Button>
+            {msg && (
+              <p className={`text-sm ${msg.toLowerCase().includes("success") || msg.toLowerCase().includes("berhasil") ? "text-emerald-700" : "text-rose-600"}`}>
+                {msg}
+              </p>
+            )}
           </div>
         </form>
       </section>
@@ -160,19 +207,19 @@ export default function GoodsReceiptPage() {
           <table className="w-full text-sm">
             <thead className="border-y border-slate-200 bg-slate-50 text-left text-slate-600">
               <tr>
-                <th className="p-3">Tanggal</th>
-                <th className="p-3">PO</th>
-                <th className="p-3">Vendor</th>
-                <th className="p-3">Item</th>
-                <th className="p-3">Qty Diterima</th>
-                <th className="p-3">Kondisi</th>
-                <th className="p-3">Gudang</th>
+                <th className="p-3">{locale === "en" ? "Date" : "Tanggal"}</th>
+                <th className="p-3">{locale === "en" ? "PO" : "PO"}</th>
+                <th className="p-3">{locale === "en" ? "Vendor" : "Vendor"}</th>
+                <th className="p-3">{locale === "en" ? "Item" : "Item"}</th>
+                <th className="p-3">{locale === "en" ? "Qty Received" : "Qty Diterima"}</th>
+                <th className="p-3">{locale === "en" ? "Condition" : "Kondisi"}</th>
+                <th className="p-3">{locale === "en" ? "Warehouse" : "Gudang"}</th>
               </tr>
             </thead>
             <tbody className="text-slate-700">
               {receipts.length === 0 ? (
                 <tr>
-                  <td className="p-3 text-slate-500" colSpan={7}>Belum ada data goods receipt.</td>
+                  <td className="p-3 text-slate-500" colSpan={7}>{locale === "en" ? "No goods receipts yet." : "Belum ada data goods receipt."}</td>
                 </tr>
               ) : (
                 receipts.map((r) => (
@@ -182,7 +229,7 @@ export default function GoodsReceiptPage() {
                     <td className="p-3">{r.vendor_name}</td>
                     <td className="p-3">{r.item_name}</td>
                     <td className="p-3">{r.quantity_received} {r.unit}</td>
-                    <td className="p-3 capitalize">{r.condition}</td>
+                    <td className="p-3">{conditionLabel(r.condition)}</td>
                     <td className="p-3">{r.warehouse_location || "-"}</td>
                   </tr>
                 ))

@@ -6,12 +6,23 @@ import Select from "@/components/ui/select";
 import { Payment } from "@/types/payment";
 import { useOfflineStore } from "@/lib/offlineStore";
 
+const formatPartyTypeLabel = (
+  locale: "id" | "en",
+  value: "customer" | "vendor" | "supplier" | "stakeholder",
+) => {
+  if (value === "customer") return locale === "en" ? "Customer" : "Pelanggan";
+  if (value === "stakeholder") return locale === "en" ? "Stakeholder" : "Pemangku Kepentingan";
+  return value === "vendor" ? "Vendor" : "Supplier";
+};
+
 export default function PaymentPage() {
   const payments = useOfflineStore((state) => state.payments);
   const orders = useOfflineStore((state) => state.orders);
   const purchases = useOfflineStore((state) => state.purchases);
   const parties = useOfflineStore((state) => state.masterParties);
   const addPayment = useOfflineStore((state) => state.addPayment);
+  const locale = useOfflineStore((state) => state.locale);
+  const numberLocale = locale === "en" ? "en-US" : "id-ID";
   const [direction, setDirection] = useState<"incoming" | "outgoing" | "">("");
   const [referenceId, setReferenceId] = useState("");
   const [paymentFor, setPaymentFor] = useState<NonNullable<Payment["payment_for"]> | "">("");
@@ -30,38 +41,42 @@ export default function PaymentPage() {
   const outgoingCount = payments.filter((p) => getDirection(p) === "outgoing").length;
 
   const directionOptions = [
-    { value: "incoming", label: "Incoming" },
-    { value: "outgoing", label: "Outgoing" },
+    { value: "incoming", label: locale === "en" ? "Incoming" : "Masuk" },
+    { value: "outgoing", label: locale === "en" ? "Outgoing" : "Keluar" },
   ];
 
   const paymentForOptions = [
-    { value: "sales", label: "Sales" },
-    { value: "electricity", label: "Electricity" },
-    { value: "water", label: "Water" },
-    { value: "chicken_feed", label: "Chicken Feed" },
-    { value: "new_chicken", label: "New Chicken" },
-    { value: "operational", label: "Operational" },
-    { value: "asset", label: "Asset" },
-    { value: "other", label: "Other" },
+    { value: "sales", label: locale === "en" ? "Sales" : "Penjualan" },
+    { value: "electricity", label: locale === "en" ? "Electricity" : "Listrik" },
+    { value: "water", label: locale === "en" ? "Water" : "Air" },
+    { value: "chicken_feed", label: locale === "en" ? "Chicken Feed" : "Pakan" },
+    { value: "new_chicken", label: locale === "en" ? "New Chicken" : "Ayam Baru" },
+    { value: "operational", label: locale === "en" ? "Operational" : "Operasional" },
+    { value: "asset", label: locale === "en" ? "Asset" : "Aset" },
+    { value: "other", label: locale === "en" ? "Other" : "Lainnya" },
   ];
 
   const methodOptions = [
-    { value: "cash", label: "Cash" },
+    { value: "cash", label: locale === "en" ? "Cash" : "Tunai" },
     { value: "qris", label: "QRIS" },
   ];
 
   const partyOptions = useMemo(() => {
     if (!direction) return [];
 
-    return parties
+    const baseOptions = parties
       .filter((party) => {
+        if (!party.is_active) return false;
         if (direction === "incoming") {
           return party.party_type === "customer" || party.party_type === "stakeholder";
         }
         return party.party_type === "vendor" || party.party_type === "supplier" || party.party_type === "stakeholder";
       })
-      .map((party) => ({ value: party.id, label: `${party.name} (${party.party_type})` }));
-  }, [direction, parties]);
+      .map((party) => ({ value: party.id, label: `${party.name} (${formatPartyTypeLabel(locale, party.party_type)})` }));
+
+    if (!partyId || !vendorName || baseOptions.some((option) => option.value === partyId)) return baseOptions;
+    return [{ value: partyId, label: `${vendorName} (${locale === "en" ? "Inactive" : "Tidak Aktif"})` }, ...baseOptions];
+  }, [direction, locale, parties, partyId, vendorName]);
 
   const onDirectionChange = (value: "incoming" | "outgoing" | "") => {
     setDirection(value);
@@ -84,7 +99,7 @@ export default function PaymentPage() {
         .filter((order) => order.payment_status !== "paid")
         .map((order) => ({
           value: order.id,
-          label: `${order.id} - ${order.address} - Rp ${order.total_price.toLocaleString("id-ID")}`,
+          label: `${order.id} - ${order.address} - Rp ${order.total_price.toLocaleString(numberLocale)}`,
         }));
     }
 
@@ -92,9 +107,9 @@ export default function PaymentPage() {
       .filter((purchase) => purchase.payment_status !== "paid")
       .map((purchase) => ({
         value: purchase.id,
-        label: `${purchase.id} - ${purchase.vendor_name} - Rp ${purchase.total_price.toLocaleString("id-ID")}`,
+        label: `${purchase.id} - ${purchase.vendor_name} - Rp ${purchase.total_price.toLocaleString(numberLocale)}`,
       }));
-  }, [direction, orders, purchases]);
+  }, [direction, numberLocale, orders, purchases]);
 
   const onReferenceChange = (value: string) => {
     setReferenceId(value);
@@ -152,7 +167,7 @@ export default function PaymentPage() {
   const handleAddPayment = (e: React.FormEvent) => {
     e.preventDefault();
     if (!direction || !paymentFor || !method || !amount) {
-      setMsg("Semua field wajib diisi kecuali vendor/pelanggan.");
+      setMsg(locale === "en" ? "All fields are required except vendor/customer." : "Semua field wajib diisi kecuali vendor/pelanggan.");
       return;
     }
 
@@ -165,7 +180,7 @@ export default function PaymentPage() {
       referenceId: referenceId || undefined,
     });
 
-    setMsg("Payment berhasil ditambahkan.");
+    setMsg(locale === "en" ? "Payment added successfully." : "Payment berhasil ditambahkan.");
     setDirection("");
     setReferenceId("");
     setPaymentFor("");
@@ -179,8 +194,12 @@ export default function PaymentPage() {
       <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
         <form onSubmit={handleAddPayment} className="space-y-4">
           <div>
-            <h1 className="text-xl font-semibold text-slate-900">Cash In and Cash Out</h1>
-            <p className="mt-1 text-sm text-slate-600">Payment terintegrasi dengan Sales Order dan Purchase Order, termasuk auto posting ke jurnal.</p>
+            <h1 className="text-xl font-semibold text-slate-900">{locale === "en" ? "Cash In and Cash Out" : "Cash In dan Cash Out"}</h1>
+            <p className="mt-1 text-sm text-slate-600">
+              {locale === "en"
+                ? "Payments are integrated with Sales Orders and Purchase Orders, including auto journal posting."
+                : "Payment terintegrasi dengan Sales Order dan Purchase Order, termasuk auto posting ke jurnal."}
+            </p>
           </div>
 
           <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
@@ -189,23 +208,27 @@ export default function PaymentPage() {
             <Select options={paymentForOptions} value={paymentFor} onChange={(e) => setPaymentFor(e.target.value as NonNullable<Payment["payment_for"]> | "")} required className="w-full" />
             <Select options={partyOptions} value={partyId} onChange={(e) => onPartyChange(e.target.value)} className="w-full" />
             <Select options={methodOptions} value={method} onChange={(e) => setMethod(e.target.value as Payment["payment_method"] | "")} required className="w-full" />
-            <Input type="number" min={1} value={amount} onChange={(e) => setAmount(e.target.value)} placeholder="Nominal" className="w-full" required />
+            <Input type="number" min={1} value={amount} onChange={(e) => setAmount(e.target.value)} placeholder={locale === "en" ? "Amount" : "Nominal"} className="w-full" required />
           </div>
 
           <div className="flex items-center justify-between gap-3">
-            <Button type="submit">+ Tambah Payment</Button>
-            {msg && <p className="text-sm text-emerald-700">{msg}</p>}
+            <Button type="submit">{locale === "en" ? "+ Add Payment" : "+ Tambah Payment"}</Button>
+            {msg && (
+              <p className={`text-sm ${msg.toLowerCase().includes("success") || msg.toLowerCase().includes("berhasil") ? "text-emerald-700" : "text-rose-600"}`}>
+                {msg}
+              </p>
+            )}
           </div>
         </form>
 
         <div className="grid gap-3 sm:grid-cols-2 mt-4">
           <div className="rounded-xl border border-emerald-200 bg-emerald-50 p-3">
-            <p className="text-xs uppercase tracking-wide text-emerald-700">Cash In</p>
-            <p className="mt-1 text-xl font-semibold text-emerald-900">{incomingCount} transaksi</p>
+            <p className="text-xs uppercase tracking-wide text-emerald-700">{locale === "en" ? "Cash In" : "Kas Masuk"}</p>
+            <p className="mt-1 text-xl font-semibold text-emerald-900">{incomingCount} {locale === "en" ? "transactions" : "transaksi"}</p>
           </div>
           <div className="rounded-xl border border-amber-200 bg-amber-50 p-3">
-            <p className="text-xs uppercase tracking-wide text-amber-700">Cash Out</p>
-            <p className="mt-1 text-xl font-semibold text-amber-900">{outgoingCount} transaksi</p>
+            <p className="text-xs uppercase tracking-wide text-amber-700">{locale === "en" ? "Cash Out" : "Kas Keluar"}</p>
+            <p className="mt-1 text-xl font-semibold text-amber-900">{outgoingCount} {locale === "en" ? "transactions" : "transaksi"}</p>
           </div>
         </div>
       </section>
@@ -215,40 +238,52 @@ export default function PaymentPage() {
           <table className="w-full text-sm">
             <thead className="border-y border-slate-200 bg-slate-50 text-left text-slate-600">
               <tr>
-                <th className="p-3">Tanggal</th>
-                <th className="p-3">Arah</th>
-                <th className="p-3">Referensi</th>
-                <th className="p-3">Untuk</th>
-                <th className="p-3">Vendor/Pelanggan</th>
-                <th className="p-3">Metode</th>
-                <th className="p-3">Jumlah</th>
-                <th className="p-3">Status</th>
-                <th className="p-3">Bukti</th>
+                <th className="p-3">{locale === "en" ? "Date" : "Tanggal"}</th>
+                <th className="p-3">{locale === "en" ? "Direction" : "Arah"}</th>
+                <th className="p-3">{locale === "en" ? "Reference" : "Referensi"}</th>
+                <th className="p-3">{locale === "en" ? "For" : "Untuk"}</th>
+                <th className="p-3">{locale === "en" ? "Vendor/Customer" : "Vendor/Pelanggan"}</th>
+                <th className="p-3">{locale === "en" ? "Method" : "Metode"}</th>
+                <th className="p-3">{locale === "en" ? "Amount" : "Jumlah"}</th>
+                <th className="p-3">{locale === "en" ? "Status" : "Status"}</th>
+                <th className="p-3">{locale === "en" ? "Proof" : "Bukti"}</th>
               </tr>
             </thead>
             <tbody className="text-slate-700">
               {payments.map((p) => {
                 const direction = getDirection(p);
+                const directionLabel = direction === "incoming"
+                  ? (locale === "en" ? "incoming" : "masuk")
+                  : (locale === "en" ? "outgoing" : "keluar");
+                const paymentForLabel = paymentForOptions.find((option) => option.value === p.payment_for)?.label
+                  ?? (p.order_id ? (locale === "en" ? "sales" : "penjualan") : (locale === "en" ? "operational" : "operasional"));
+
                 return (
                   <tr key={p.id} className="border-b border-slate-100">
                     <td className="p-3">{p.payment_date}</td>
                     <td className="p-3">
                       <span className={`rounded-full px-2 py-1 text-xs font-semibold ${direction === "incoming" ? "bg-emerald-100 text-emerald-700" : "bg-amber-100 text-amber-800"}`}>
-                        {direction}
+                        {directionLabel}
                       </span>
                     </td>
                     <td className="p-3">{p.reference_id || p.order_id || p.purchase_id || "-"}</td>
-                    <td className="p-3 capitalize">{p.payment_for || (p.order_id ? "sales" : "operational")}</td>
+                    <td className="p-3">{paymentForLabel}</td>
                     <td className="p-3">{p.vendor_name || "-"}</td>
                     <td className="p-3 uppercase">{p.payment_method}</td>
-                    <td className="p-3">{p.amount}</td>
+                    <td className="p-3">{p.amount.toLocaleString(numberLocale)}</td>
                     <td className="p-3">
                       <span className={`rounded-full px-2 py-1 text-xs font-semibold ${p.is_paid ? "bg-emerald-100 text-emerald-700" : "bg-slate-100 text-slate-700"}`}>
-                        {p.is_paid ? "Paid" : "Pending"}
+                        {p.is_paid ? (locale === "en" ? "Paid" : "Lunas") : (locale === "en" ? "Pending" : "Pending")}
                       </span>
                     </td>
                     <td className="p-3">
-                      {p.payment_proof_url ? <a href={p.payment_proof_url} target="_blank" rel="noopener noreferrer" className="text-teal-700 hover:underline">Bukti</a> : "-"}
+                      {p.payment_proof_url
+                        ? (
+                          <a href={p.payment_proof_url} target="_blank" rel="noopener noreferrer" className="text-teal-700 hover:underline">
+                            {locale === "en" ? "View" : "Bukti"}
+                          </a>
+                        )
+                        : "-"}
                     </td>
                   </tr>
                 );

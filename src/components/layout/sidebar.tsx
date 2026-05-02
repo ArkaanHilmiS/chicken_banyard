@@ -2,56 +2,70 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import Select from "@/components/ui/select";
+import { useOfflineStore } from "@/lib/offlineStore";
 
 const menuSections = [
   {
-    title: "Beranda",
+    key: "home",
+    title: { id: "Beranda", en: "Home" },
     items: [
-      { href: "/", label: "Overview" },
+      { href: "/", label: { id: "Ringkasan", en: "Overview" } },
     ],
   },
   {
-    title: "Bisnis",
+    key: "business",
+    title: { id: "Bisnis", en: "Process" },
     items: [
-      { href: "/order", label: "Sales Order" },
-      { href: "/payment", label: "Payment" },
-      { href: "/delivery-order", label: "Delivery Order" },
-      { href: "/procurement", label: "Procurement" },
-      { href: "/goods-receipt", label: "Goods Receipt" },
-      { href: "/stock", label: "Inventory" },
-      { href: "/price", label: "Pricing" },
+      { href: "/order", label: { id: "Sales Order", en: "Sales Order" } },
+      { href: "/payment", label: { id: "Pembayaran", en: "Payment" } },
+      { href: "/delivery-order", label: { id: "Pengiriman", en: "Delivery Order" } },
+      { href: "/procurement", label: { id: "Pengadaan", en: "Procurement" } },
+      { href: "/goods-receipt", label: { id: "Penerimaan", en: "Goods Receipt" } },
+      { href: "/stock", label: { id: "Stok", en: "Inventory" } },
+      { href: "/price", label: { id: "Harga", en: "Pricing" } },
     ],
   },
   {
-    title: "Konfig",
+    key: "config",
+    title: { id: "Konfig", en: "Config" },
     items: [
-      { href: "/master-data", label: "Master Data" },
-      { href: "/item-master", label: "Item Master" },
-      { href: "/price-master", label: "Price Master" },
-      { href: "/uom-master", label: "UoM Master" },
-      { href: "/coa", label: "COA" },
+      { href: "/master-data", label: { id: "Master Data", en: "Master Data" } },
+      { href: "/item-master", label: { id: "Master Item", en: "Item Master" } },
+      { href: "/price-master", label: { id: "Master Harga", en: "Price Master" } },
+      { href: "/uom-master", label: { id: "Master UoM", en: "UoM Master" } },
+      { href: "/coa", label: { id: "COA", en: "COA" } },
     ],
   },
   {
-    title: "Monitor",
+    key: "monitor",
+    title: { id: "Monitor", en: "Monitor" },
     items: [
-      { href: "/dashboard", label: "Dashboard" },
-      { href: "/journal", label: "Journal" },
-      { href: "/report", label: "Report" },
+      { href: "/dashboard", label: { id: "Dashboard", en: "Dashboard" } },
+      { href: "/journal", label: { id: "Jurnal", en: "Journal" } },
+      { href: "/report", label: { id: "Laporan", en: "Report" } },
     ],
   },
   {
-    title: "Akun",
+    key: "account",
+    title: { id: "Akun", en: "Account" },
     items: [
-      { href: "/profile", label: "Profile" },
-      { href: "/login", label: "Login" },
-      { href: "/register", label: "Register" },
+      { href: "/profile", label: { id: "Profil", en: "Profile" } },
+      { href: "/login", label: { id: "Masuk", en: "Login" } },
+      { href: "/register", label: { id: "Daftar", en: "Register" } },
     ],
   },
 ];
 
 export default function Sidebar() {
   const pathname = usePathname();
+  const locale = useOfflineStore((state) => state.locale);
+  const setLocale = useOfflineStore((state) => state.setLocale);
+
+  const languageOptions = [
+    { value: "id", label: "Bahasa Indonesia" },
+    { value: "en", label: "English" },
+  ];
 
   return (
     <aside className="hidden w-72 shrink-0 border-r border-slate-200/70 bg-white/70 px-4 py-6 backdrop-blur-md lg:block">
@@ -64,16 +78,18 @@ export default function Sidebar() {
       <nav aria-label="Main navigation" className="space-y-3">
         {menuSections.map((section) => {
           const isSectionActive = section.items.some((item) => item.href === pathname);
+          const sectionTitle = section.title[locale];
 
           return (
-            <details key={section.title} className="group" open={isSectionActive}>
+            <details key={section.key} className="group" open={isSectionActive}>
               <summary className="flex cursor-pointer items-center justify-between rounded-lg px-3 py-2 text-[11px] font-semibold uppercase tracking-[0.2em] text-slate-500 hover:bg-slate-50">
-                <span>{section.title}</span>
+                <span>{sectionTitle}</span>
                 <span className="inline-block text-slate-400 transition group-open:rotate-90">&gt;</span>
               </summary>
               <div className="mt-1 space-y-1">
                 {section.items.map((item) => {
                   const isActive = pathname === item.href;
+                  const label = item.label[locale];
 
                   return (
                     <Link
@@ -85,10 +101,24 @@ export default function Sidebar() {
                           : "text-slate-700 hover:bg-slate-100 hover:text-slate-900"
                       }`}
                     >
-                      {item.label}
+                      {label}
                     </Link>
                   );
                 })}
+                {section.key === "account" && (
+                  <div className="px-3 py-2">
+                    <p className="mb-2 text-[11px] font-semibold uppercase tracking-[0.2em] text-slate-500">
+                      {locale === "id" ? "Bahasa" : "Language"}
+                    </p>
+                    <Select
+                      options={languageOptions}
+                      value={locale}
+                      onChange={(e) => setLocale(e.target.value as "id" | "en")}
+                      className="w-full"
+                      placeholder={locale === "id" ? "Pilih bahasa" : "Select language"}
+                    />
+                  </div>
+                )}
               </div>
             </details>
           );

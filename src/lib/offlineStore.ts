@@ -37,6 +37,8 @@ interface OfflineStoreState {
   warehouses: Warehouse[];
   users: AuthUser[];
   currentUserId?: string;
+  locale: "id" | "en";
+  setLocale: (locale: "id" | "en") => void;
   addOrder: (input: {
     itemId: string;
     quantity: number;
@@ -63,8 +65,11 @@ interface OfflineStoreState {
     sellingPrice: number;
     minStock: number;
     description?: string;
+    isActive?: boolean;
   }) => void;
-  addUnitOfMeasure: (input: { name: string; symbol: string; description?: string }) => void;
+  toggleItemMaster: (itemId: string) => void;
+  addUnitOfMeasure: (input: { name: string; symbol: string; description?: string; isActive?: boolean }) => void;
+  toggleUnitOfMeasure: (uomId: string) => void;
   addPriceMaster: (input: {
     itemId: string;
     itemName: string;
@@ -90,7 +95,9 @@ interface OfflineStoreState {
     preferredPaymentMethod?: "cash" | "qris";
     preferredTransactionMethod?: "cash-in" | "cash-out" | "transfer" | "hybrid";
     notes?: string;
+    isActive?: boolean;
   }) => void;
+  toggleMasterParty: (partyId: string) => void;
   registerUser: (input: { email: string; password: string; username: string; whatsappNumber: string }) => { ok: boolean; message: string };
   loginUser: (input: { email: string; password: string }) => { ok: boolean; message: string };
   updateCurrentProfile: (input: { username: string; whatsappNumber: string; capitalAddress: string }) => { ok: boolean; message: string };
@@ -201,10 +208,13 @@ export const useOfflineStore = create<OfflineStoreState>((set, get) => ({
   warehouses: seedWarehouses,
   users: seedUsers,
   currentUserId: "USR-001",
+  locale: "id",
+
+  setLocale: (locale) => set({ locale }),
 
   addOrder: ({ itemId, quantity, serviceMethod, address, paymentMethod, deliveryDate, deliveryTime }) => {
     const selectedItem = get().itemMasters.find((item) => item.id === itemId);
-    if (!selectedItem) return;
+    if (!selectedItem || !selectedItem.is_active) return;
     const sellingPriceFromMaster = get().priceMasters.find((price) => price.item_id === itemId && price.price_type === "selling")?.price_value;
     const unitPrice = sellingPriceFromMaster ?? selectedItem.selling_price;
 
@@ -312,6 +322,9 @@ export const useOfflineStore = create<OfflineStoreState>((set, get) => ({
   },
 
   addPurchase: ({ vendorName, itemId, itemName, quantity, unit, unitPrice, category }) => {
+    const selectedItem = get().itemMasters.find((item) => item.id === itemId);
+    if (!selectedItem || !selectedItem.is_active) return;
+
     const activeUserId = get().currentUserId ?? "USR-001";
     const total = quantity * unitPrice;
     const newPurchase: Purchase = {
@@ -502,7 +515,7 @@ export const useOfflineStore = create<OfflineStoreState>((set, get) => ({
   addStock: ({ itemId, quantity, warehouseId, stockType, orderId }) => {
     const selectedItem = get().itemMasters.find((item) => item.id === itemId);
     const selectedWarehouse = get().warehouses.find((warehouse) => warehouse.id === warehouseId);
-    if (!selectedItem || !selectedWarehouse) return;
+    if (!selectedItem || !selectedItem.is_active || !selectedWarehouse || !selectedWarehouse.is_active) return;
 
     const newStock: Stock = {
       id: makeId("STK"),
@@ -548,7 +561,10 @@ export const useOfflineStore = create<OfflineStoreState>((set, get) => ({
     set((state) => ({ prices: [newPrice, ...state.prices] }));
   },
 
-  addItemMaster: ({ sku, name, category, defaultUom, purchasePrice, sellingPrice, minStock, description }) => {
+  addItemMaster: ({ sku, name, category, defaultUom, purchasePrice, sellingPrice, minStock, description, isActive }) => {
+    const selectedUom = get().unitOfMeasures.find((uom) => uom.symbol === defaultUom);
+    if (!selectedUom || !selectedUom.is_active) return;
+
     const newItem: ItemMaster = {
       id: makeId("ITM"),
       sku,
@@ -559,24 +575,44 @@ export const useOfflineStore = create<OfflineStoreState>((set, get) => ({
       selling_price: sellingPrice,
       min_stock: minStock,
       description,
-      is_active: true,
+      is_active: isActive ?? true,
       created_at: nowIso(),
     };
 
     set((state) => ({ itemMasters: [newItem, ...state.itemMasters] }));
   },
 
-  addUnitOfMeasure: ({ name, symbol, description }) => {
+  toggleItemMaster: (itemId) => {
+    set((state) => ({
+      itemMasters: state.itemMasters.map((item) =>
+        item.id === itemId
+          ? { ...item, is_active: !item.is_active }
+          : item,
+      ),
+    }));
+  },
+
+  addUnitOfMeasure: ({ name, symbol, description, isActive }) => {
     const newUom: UnitOfMeasure = {
       id: makeId("UOM"),
       name,
       symbol,
       description,
-      is_active: true,
+      is_active: isActive ?? true,
       created_at: nowIso(),
     };
 
     set((state) => ({ unitOfMeasures: [newUom, ...state.unitOfMeasures] }));
+  },
+
+  toggleUnitOfMeasure: (uomId) => {
+    set((state) => ({
+      unitOfMeasures: state.unitOfMeasures.map((uom) =>
+        uom.id === uomId
+          ? { ...uom, is_active: !uom.is_active }
+          : uom,
+      ),
+    }));
   },
 
   addWarehouse: ({ name, code, location }) => {
@@ -593,6 +629,10 @@ export const useOfflineStore = create<OfflineStoreState>((set, get) => ({
   },
 
   addPriceMaster: ({ itemId, itemName, uom, priceType, priceValue, effectiveDate, paymentMethod, transactionMethod }) => {
+    const selectedItem = get().itemMasters.find((item) => item.id === itemId);
+    const selectedUom = get().unitOfMeasures.find((uomRow) => uomRow.symbol === uom);
+    if (!selectedItem || !selectedItem.is_active || !selectedUom || !selectedUom.is_active) return;
+
     const newPriceMaster: PriceMaster = {
       id: makeId("PM"),
       item_id: itemId,
@@ -612,10 +652,21 @@ export const useOfflineStore = create<OfflineStoreState>((set, get) => ({
   addChartOfAccount: ({ code, name, category, isActive }) => {
     const trimmedCode = code.trim();
     const trimmedName = name.trim();
-    if (!trimmedCode || !trimmedName) return { ok: false, message: "Kode dan nama akun wajib diisi." };
+    const locale = get().locale;
+    if (!trimmedCode || !trimmedName) {
+      return {
+        ok: false,
+        message: locale === "en" ? "Account code and name are required." : "Kode dan nama akun wajib diisi.",
+      };
+    }
 
     const exists = get().chartOfAccounts.some((account) => account.code === trimmedCode);
-    if (exists) return { ok: false, message: "Kode COA sudah terdaftar." };
+    if (exists) {
+      return {
+        ok: false,
+        message: locale === "en" ? "COA code is already registered." : "Kode COA sudah terdaftar.",
+      };
+    }
 
     const newAccount: ChartOfAccount = {
       id: makeId("COA"),
@@ -627,7 +678,10 @@ export const useOfflineStore = create<OfflineStoreState>((set, get) => ({
     };
 
     set((state) => ({ chartOfAccounts: [newAccount, ...state.chartOfAccounts] }));
-    return { ok: true, message: "COA berhasil ditambahkan." };
+    return {
+      ok: true,
+      message: locale === "en" ? "COA added successfully." : "COA berhasil ditambahkan.",
+    };
   },
 
   toggleChartOfAccount: (accountId) => {
@@ -653,6 +707,7 @@ export const useOfflineStore = create<OfflineStoreState>((set, get) => ({
     preferredPaymentMethod,
     preferredTransactionMethod,
     notes,
+    isActive,
   }) => {
     const newParty: MasterParty = {
       id: makeId("MST"),
@@ -667,6 +722,7 @@ export const useOfflineStore = create<OfflineStoreState>((set, get) => ({
       bank_account_name: bankAccountName,
       preferred_payment_method: preferredPaymentMethod,
       preferred_transaction_method: preferredTransactionMethod,
+      is_active: isActive ?? true,
       total_transaction_rp: 0,
       transaction_count: 0,
       notes,
@@ -674,6 +730,16 @@ export const useOfflineStore = create<OfflineStoreState>((set, get) => ({
     };
 
     set((state) => ({ masterParties: [newParty, ...state.masterParties] }));
+  },
+
+  toggleMasterParty: (partyId) => {
+    set((state) => ({
+      masterParties: state.masterParties.map((party) =>
+        party.id === partyId
+          ? { ...party, is_active: !party.is_active }
+          : party,
+      ),
+    }));
   },
 
   registerUser: ({ email, password, username, whatsappNumber }) => {

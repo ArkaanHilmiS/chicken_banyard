@@ -7,18 +7,19 @@ import { useOfflineStore } from "@/lib/offlineStore";
 export default function PricePage() {
   const prices = useOfflineStore((state) => state.prices);
   const addPrice = useOfflineStore((state) => state.addPrice);
+  const locale = useOfflineStore((state) => state.locale);
   const [pricePerKg, setPricePerKg] = useState("");
   const [msg, setMsg] = useState("");
 
   const handleAddPrice = (e: React.FormEvent) => {
     e.preventDefault();
     if (!pricePerKg) {
-      setMsg("Harga per kg wajib diisi.");
+      setMsg(locale === "en" ? "Price per kg is required." : "Harga per kg wajib diisi.");
       return;
     }
 
     addPrice(Number(pricePerKg));
-    setMsg("Harga berhasil ditambahkan.");
+    setMsg(locale === "en" ? "Price added successfully." : "Harga berhasil ditambahkan.");
     setPricePerKg("");
   };
 
@@ -26,14 +27,16 @@ export default function PricePage() {
     <div className="mx-auto max-w-6xl rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
       <div className="mb-4 flex items-center justify-between gap-3">
         <div>
-          <h1 className="text-xl font-semibold text-slate-900">Pricing Table</h1>
-          <p className="mt-1 text-sm text-slate-600">Input harga telur per kg secara manual.</p>
+          <h1 className="text-xl font-semibold text-slate-900">{locale === "en" ? "Pricing Table" : "Tabel Harga"}</h1>
+          <p className="mt-1 text-sm text-slate-600">
+            {locale === "en" ? "Enter egg price per kg manually." : "Input harga telur per kg secara manual."}
+          </p>
         </div>
       </div>
 
       <form onSubmit={handleAddPrice} className="mb-4 flex flex-wrap items-center gap-3">
-        <Input type="number" min={1} value={pricePerKg} onChange={(e) => setPricePerKg(e.target.value)} placeholder="Harga / Kg" className="w-full max-w-xs" required />
-        <Button type="submit">+ Tambah Harga</Button>
+        <Input type="number" min={1} value={pricePerKg} onChange={(e) => setPricePerKg(e.target.value)} placeholder={locale === "en" ? "Price / Kg" : "Harga / Kg"} className="w-full max-w-xs" required />
+        <Button type="submit">{locale === "en" ? "+ Add Price" : "+ Tambah Harga"}</Button>
       </form>
 
       {msg && <p className="mb-4 text-sm text-emerald-700">{msg}</p>}
@@ -42,8 +45,8 @@ export default function PricePage() {
         <table className="w-full text-sm">
           <thead className="border-y border-slate-200 bg-slate-50 text-left text-slate-600">
             <tr>
-              <th className="p-3">Tanggal</th>
-              <th className="p-3">Harga / Kg</th>
+              <th className="p-3">{locale === "en" ? "Date" : "Tanggal"}</th>
+              <th className="p-3">{locale === "en" ? "Price / Kg" : "Harga / Kg"}</th>
             </tr>
           </thead>
           <tbody className="text-slate-700">

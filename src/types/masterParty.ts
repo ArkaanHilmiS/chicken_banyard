@@ -11,6 +11,7 @@ export interface MasterParty {
   bank_account_name?: string
   preferred_payment_method?: "cash" | "qris"
   preferred_transaction_method?: "cash-in" | "cash-out" | "transfer" | "hybrid"
+  is_active: boolean
   total_transaction_rp: number
   transaction_count: number
   notes?: string

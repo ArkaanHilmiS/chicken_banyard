@@ -6,6 +6,7 @@ import { useOfflineStore } from "@/lib/offlineStore";
 
 export default function LoginPage() {
   const loginUser = useOfflineStore((state) => state.loginUser);
+  const locale = useOfflineStore((state) => state.locale);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [msg, setMsg] = useState("");
@@ -18,12 +19,14 @@ export default function LoginPage() {
 
   return (
     <div className="mx-auto max-w-md rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
-      <h1 className="text-xl font-semibold text-slate-900">Login ERP</h1>
-      <p className="mt-1 text-sm text-slate-600">Masuk untuk mengakses modul operasional Chicken Banyard.</p>
+      <h1 className="text-xl font-semibold text-slate-900">{locale === "en" ? "ERP Login" : "Login ERP"}</h1>
+      <p className="mt-1 text-sm text-slate-600">
+        {locale === "en" ? "Sign in to access Chicken Banyard operational modules." : "Masuk untuk mengakses modul operasional Chicken Banyard."}
+      </p>
       <form onSubmit={handleLogin} className="mt-5 space-y-3">
-        <Input type="email" value={email} onChange={e => setEmail(e.target.value)} placeholder="Email" required className="w-full" />
-        <Input type="password" value={password} onChange={e => setPassword(e.target.value)} placeholder="Password" required className="w-full" />
-        <Button type="submit" className="w-full">Login</Button>
+        <Input type="email" value={email} onChange={e => setEmail(e.target.value)} placeholder={locale === "en" ? "Email" : "Email"} required className="w-full" />
+        <Input type="password" value={password} onChange={e => setPassword(e.target.value)} placeholder={locale === "en" ? "Password" : "Password"} required className="w-full" />
+        <Button type="submit" className="w-full">{locale === "en" ? "Sign In" : "Login"}</Button>
         {msg && <div className="text-sm text-slate-700">{msg}</div>}
       </form>
     </div>

@@ -30,6 +30,7 @@ export default function ReportPage() {
   const goodsReceipts = useOfflineStore((state) => state.goodsReceipts);
   const journals = useOfflineStore((state) => state.journals);
   const chartOfAccounts = useOfflineStore((state) => state.chartOfAccounts);
+  const locale = useOfflineStore((state) => state.locale);
   const [dateFrom, setDateFrom] = useState("");
   const [dateTo, setDateTo] = useState("");
   const [accountCode, setAccountCode] = useState("");
@@ -42,27 +43,50 @@ export default function ReportPage() {
     return payment.order_id ? "incoming" : "outgoing";
   };
 
+  const categoryLabelMap: Record<Journal["category"], string> = {
+    pendapatan: locale === "en" ? "Revenue" : "Pendapatan",
+    beban: locale === "en" ? "Expense" : "Beban",
+    aset: locale === "en" ? "Asset" : "Aset",
+    liabilitas: locale === "en" ? "Liability" : "Liabilitas",
+    modal: locale === "en" ? "Equity" : "Modal",
+  };
+
+  const typeLabelMap: Record<string, string> = {
+    "cash-in": locale === "en" ? "Cash In" : "Cash In",
+    "cash-out": locale === "en" ? "Cash Out" : "Cash Out",
+    adjustment: locale === "en" ? "Adjustment" : "Penyesuaian",
+  };
+
+  const sourceLabelMap: Record<string, string> = {
+    orders: locale === "en" ? "Orders" : "Orders",
+    payments: locale === "en" ? "Payments" : "Payments",
+    purchases: locale === "en" ? "Purchases" : "Purchases",
+    goods_receipts: locale === "en" ? "Goods Receipt" : "Goods Receipt",
+    stocks: locale === "en" ? "Stock" : "Stok",
+    manual: locale === "en" ? "Manual" : "Manual",
+  };
+
   const sourceOptions = [
-    { value: "orders", label: "Orders" },
-    { value: "payments", label: "Payments" },
-    { value: "purchases", label: "Purchases" },
-    { value: "goods_receipts", label: "Goods Receipt" },
-    { value: "stocks", label: "Stock" },
-    { value: "manual", label: "Manual" },
+    { value: "orders", label: sourceLabelMap.orders },
+    { value: "payments", label: sourceLabelMap.payments },
+    { value: "purchases", label: sourceLabelMap.purchases },
+    { value: "goods_receipts", label: sourceLabelMap.goods_receipts },
+    { value: "stocks", label: sourceLabelMap.stocks },
+    { value: "manual", label: sourceLabelMap.manual },
   ];
 
   const categoryOptions = [
-    { value: "pendapatan", label: "Pendapatan" },
-    { value: "beban", label: "Beban" },
-    { value: "aset", label: "Aset" },
-    { value: "liabilitas", label: "Liabilitas" },
-    { value: "modal", label: "Modal" },
+    { value: "pendapatan", label: categoryLabelMap.pendapatan },
+    { value: "beban", label: categoryLabelMap.beban },
+    { value: "aset", label: categoryLabelMap.aset },
+    { value: "liabilitas", label: categoryLabelMap.liabilitas },
+    { value: "modal", label: categoryLabelMap.modal },
   ];
 
   const typeOptions = [
-    { value: "cash-in", label: "Cash In" },
-    { value: "cash-out", label: "Cash Out" },
-    { value: "adjustment", label: "Adjustment" },
+    { value: "cash-in", label: typeLabelMap["cash-in"] },
+    { value: "cash-out", label: typeLabelMap["cash-out"] },
+    { value: "adjustment", label: typeLabelMap.adjustment },
   ];
 
   const accountOptions = useMemo(
@@ -212,24 +236,32 @@ export default function ReportPage() {
   }, [filteredJournals]);
 
   const summaries = [
-    { label: "Revenue Paid", value: formatRupiah(revenueTotal) },
-    { label: "Biaya Operasional", value: formatRupiah(operationalTotal) },
-    { label: "Belanja Procurement", value: formatRupiah(procurementTotal) },
-    { label: "Cashflow Bersih", value: formatRupiah(netCashflow) },
+    { label: locale === "en" ? "Revenue Paid" : "Pendapatan Dibayar", value: formatRupiah(revenueTotal) },
+    { label: locale === "en" ? "Operational Expense" : "Biaya Operasional", value: formatRupiah(operationalTotal) },
+    { label: locale === "en" ? "Procurement Spend" : "Belanja Procurement", value: formatRupiah(procurementTotal) },
+    { label: locale === "en" ? "Net Cashflow" : "Cashflow Bersih", value: formatRupiah(netCashflow) },
   ];
 
   return (
     <div className="mx-auto max-w-6xl space-y-5">
       <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
-        <h1 className="text-xl font-semibold text-slate-900">Reporting Center</h1>
-        <p className="mt-1 text-sm text-slate-600">Ringkasan performa sales, procurement, cash in and out, dan operasional farm.</p>
+        <h1 className="text-xl font-semibold text-slate-900">{locale === "en" ? "Reporting Center" : "Reporting Center"}</h1>
+        <p className="mt-1 text-sm text-slate-600">
+          {locale === "en"
+            ? "Performance summary for sales, procurement, cash flow, and farm operations."
+            : "Ringkasan performa sales, procurement, cash in and out, dan operasional farm."}
+        </p>
       </section>
 
       <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
         <div className="flex flex-wrap items-center justify-between gap-2">
           <div>
-            <h2 className="text-base font-semibold text-slate-900">Filter Report</h2>
-            <p className="mt-1 text-sm text-slate-600">Filter ringkasan berdasarkan periode dan akun.</p>
+            <h2 className="text-base font-semibold text-slate-900">{locale === "en" ? "Report Filters" : "Filter Report"}</h2>
+            <p className="mt-1 text-sm text-slate-600">
+              {locale === "en"
+                ? "Filter summaries by date range and account."
+                : "Filter ringkasan berdasarkan periode dan akun."}
+            </p>
           </div>
         </div>
 
@@ -254,75 +286,77 @@ export default function ReportPage() {
 
       <section className="grid gap-4 lg:grid-cols-3">
         <article className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
-          <h2 className="text-base font-semibold text-slate-900">Status Sales Order</h2>
+          <h2 className="text-base font-semibold text-slate-900">{locale === "en" ? "Sales Order Status" : "Status Sales Order"}</h2>
           <div className="mt-3 space-y-1 text-sm text-slate-600">
-            <p>Pending: {orderSummary.pending}</p>
-            <p>Paid: {orderSummary.paid}</p>
-            <p>Delivered: {orderSummary.delivered}</p>
-            <p>Cancelled: {orderSummary.cancelled}</p>
+            <p>{locale === "en" ? "Pending" : "Pending"}: {orderSummary.pending}</p>
+            <p>{locale === "en" ? "Paid" : "Paid"}: {orderSummary.paid}</p>
+            <p>{locale === "en" ? "Delivered" : "Delivered"}: {orderSummary.delivered}</p>
+            <p>{locale === "en" ? "Cancelled" : "Dibatalkan"}: {orderSummary.cancelled}</p>
           </div>
         </article>
 
         <article className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
-          <h2 className="text-base font-semibold text-slate-900">Status Procurement</h2>
+          <h2 className="text-base font-semibold text-slate-900">{locale === "en" ? "Procurement Status" : "Status Procurement"}</h2>
           <div className="mt-3 space-y-1 text-sm text-slate-600">
-            <p>Pending: {purchaseSummary.pending}</p>
-            <p>Paid: {purchaseSummary.paid}</p>
-            <p>Partial: {purchaseSummary.partial}</p>
-            <p>Total PO: {filteredPurchases.length}</p>
+            <p>{locale === "en" ? "Pending" : "Pending"}: {purchaseSummary.pending}</p>
+            <p>{locale === "en" ? "Paid" : "Paid"}: {purchaseSummary.paid}</p>
+            <p>{locale === "en" ? "Partial" : "Partial"}: {purchaseSummary.partial}</p>
+            <p>{locale === "en" ? "Total PO" : "Total PO"}: {filteredPurchases.length}</p>
           </div>
         </article>
 
         <article className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
-          <h2 className="text-base font-semibold text-slate-900">Goods Receipt</h2>
+          <h2 className="text-base font-semibold text-slate-900">{locale === "en" ? "Goods Receipt" : "Goods Receipt"}</h2>
           <div className="mt-3 space-y-1 text-sm text-slate-600">
-            <p>Total GRN: {filteredGoodsReceipts.length}</p>
-            <p>Payment Incoming: {paidIncoming.length}</p>
-            <p>Payment Outgoing: {paidOutgoing.length}</p>
+            <p>{locale === "en" ? "Total GRN" : "Total GRN"}: {filteredGoodsReceipts.length}</p>
+            <p>{locale === "en" ? "Payment Incoming" : "Pembayaran Masuk"}: {paidIncoming.length}</p>
+            <p>{locale === "en" ? "Payment Outgoing" : "Pembayaran Keluar"}: {paidOutgoing.length}</p>
           </div>
         </article>
       </section>
 
       <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
         <article className="rounded-2xl border border-emerald-200 bg-emerald-50 p-5 shadow-sm">
-          <h2 className="text-base font-semibold text-emerald-900">Total Debit</h2>
+          <h2 className="text-base font-semibold text-emerald-900">{locale === "en" ? "Total Debit" : "Total Debit"}</h2>
           <p className="mt-2 text-2xl font-semibold text-emerald-900">{formatRupiah(journalTotals.debit)}</p>
-          <p className="mt-1 text-xs text-emerald-700">Berdasarkan jurnal transaksi</p>
+          <p className="mt-1 text-xs text-emerald-700">{locale === "en" ? "Based on journal entries" : "Berdasarkan jurnal transaksi"}</p>
         </article>
         <article className="rounded-2xl border border-rose-200 bg-rose-50 p-5 shadow-sm">
-          <h2 className="text-base font-semibold text-rose-900">Total Kredit</h2>
+          <h2 className="text-base font-semibold text-rose-900">{locale === "en" ? "Total Credit" : "Total Kredit"}</h2>
           <p className="mt-2 text-2xl font-semibold text-rose-900">{formatRupiah(journalTotals.credit)}</p>
-          <p className="mt-1 text-xs text-rose-700">Berdasarkan jurnal transaksi</p>
+          <p className="mt-1 text-xs text-rose-700">{locale === "en" ? "Based on journal entries" : "Berdasarkan jurnal transaksi"}</p>
         </article>
         <article className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
-          <h2 className="text-base font-semibold text-slate-900">Saldo Jurnal</h2>
+          <h2 className="text-base font-semibold text-slate-900">{locale === "en" ? "Journal Balance" : "Saldo Jurnal"}</h2>
           <p className="mt-2 text-2xl font-semibold text-slate-900">{formatRupiah(journalBalance)}</p>
-          <p className="mt-1 text-xs text-slate-500">Debit - Kredit</p>
+          <p className="mt-1 text-xs text-slate-500">{locale === "en" ? "Debit - Credit" : "Debit - Kredit"}</p>
         </article>
       </section>
 
       <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
-        <h2 className="text-base font-semibold text-slate-900">Rekap Akun (Debit/Kredit)</h2>
-        <p className="mt-1 text-sm text-slate-600">Ringkasan jurnal per kategori akun untuk analisis akuntansi.</p>
+        <h2 className="text-base font-semibold text-slate-900">{locale === "en" ? "Account Summary (Debit/Credit)" : "Rekap Akun (Debit/Kredit)"}</h2>
+        <p className="mt-1 text-sm text-slate-600">
+          {locale === "en" ? "Journal summary by account category for accounting analysis." : "Ringkasan jurnal per kategori akun untuk analisis akuntansi."}
+        </p>
         <div className="mt-4 overflow-x-auto">
           <table className="w-full text-sm">
             <thead className="border-y border-slate-200 bg-slate-50 text-left text-slate-600">
               <tr>
-                <th className="p-3">Akun</th>
-                <th className="p-3">Debit</th>
-                <th className="p-3">Kredit</th>
-                <th className="p-3">Entry</th>
+                <th className="p-3">{locale === "en" ? "Account" : "Akun"}</th>
+                <th className="p-3">{locale === "en" ? "Debit" : "Debit"}</th>
+                <th className="p-3">{locale === "en" ? "Credit" : "Kredit"}</th>
+                <th className="p-3">{locale === "en" ? "Entries" : "Entry"}</th>
               </tr>
             </thead>
             <tbody className="text-slate-700">
               {journalCategorySummary.length === 0 ? (
                 <tr>
-                  <td className="p-3 text-slate-500" colSpan={4}>Belum ada jurnal tercatat.</td>
+                  <td className="p-3 text-slate-500" colSpan={4}>{locale === "en" ? "No journal entries yet." : "Belum ada jurnal tercatat."}</td>
                 </tr>
               ) : (
                 journalCategorySummary.map((row) => {
                   const account = accountByCategory.get(row.category as Journal["category"]);
-                  const accountLabel = account ? `${account.code} - ${account.name}` : row.category;
+                  const accountLabel = account ? `${account.code} - ${account.name}` : (categoryLabelMap[row.category as Journal["category"]] ?? row.category);
 
                   return (
                     <tr key={row.category} className="border-b border-slate-100">
@@ -340,29 +374,31 @@ export default function ReportPage() {
       </section>
 
       <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
-        <h2 className="text-base font-semibold text-slate-900">Jurnal Terbaru</h2>
-        <p className="mt-1 text-sm text-slate-600">Seluruh transaksi tercatat otomatis pada jurnal.</p>
+        <h2 className="text-base font-semibold text-slate-900">{locale === "en" ? "Latest Journals" : "Jurnal Terbaru"}</h2>
+        <p className="mt-1 text-sm text-slate-600">
+          {locale === "en" ? "All transactions are recorded automatically in the journal." : "Seluruh transaksi tercatat otomatis pada jurnal."}
+        </p>
         <div className="mt-4 overflow-x-auto">
           <table className="w-full text-sm">
             <thead className="border-y border-slate-200 bg-slate-50 text-left text-slate-600">
               <tr>
-                <th className="p-3">Tanggal</th>
-                <th className="p-3">Deskripsi</th>
-                <th className="p-3">Akun</th>
-                <th className="p-3">Debit</th>
-                <th className="p-3">Kredit</th>
+                <th className="p-3">{locale === "en" ? "Date" : "Tanggal"}</th>
+                <th className="p-3">{locale === "en" ? "Description" : "Deskripsi"}</th>
+                <th className="p-3">{locale === "en" ? "Account" : "Akun"}</th>
+                <th className="p-3">{locale === "en" ? "Debit" : "Debit"}</th>
+                <th className="p-3">{locale === "en" ? "Credit" : "Kredit"}</th>
               </tr>
             </thead>
             <tbody className="text-slate-700">
               {latestJournals.length === 0 ? (
                 <tr>
-                  <td className="p-3 text-slate-500" colSpan={5}>Belum ada jurnal tercatat.</td>
+                  <td className="p-3 text-slate-500" colSpan={5}>{locale === "en" ? "No journal entries yet." : "Belum ada jurnal tercatat."}</td>
                 </tr>
               ) : (
                 latestJournals.map((journal) => {
                   const { debit, credit } = resolveDebitCredit(journal);
                   const account = accountByCategory.get(journal.category);
-                  const accountLabel = account ? `${account.code} - ${account.name}` : journal.category;
+                  const accountLabel = account ? `${account.code} - ${account.name}` : (categoryLabelMap[journal.category] ?? journal.category);
 
                   return (
                     <tr key={journal.id} className="border-b border-slate-100">
@@ -381,13 +417,23 @@ export default function ReportPage() {
       </section>
 
       <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
-        <h2 className="text-base font-semibold text-slate-900">Export Laporan</h2>
+        <h2 className="text-base font-semibold text-slate-900">{locale === "en" ? "Export Reports" : "Export Laporan"}</h2>
         <div className="mt-4 flex flex-wrap gap-3">
-          <button className="rounded-md border border-slate-300 px-3 py-2 text-sm font-medium text-slate-700 hover:border-slate-500">Laporan Penjualan (XLSX)</button>
-          <button className="rounded-md border border-slate-300 px-3 py-2 text-sm font-medium text-slate-700 hover:border-slate-500">Laporan Procurement (XLSX)</button>
-          <button className="rounded-md border border-slate-300 px-3 py-2 text-sm font-medium text-slate-700 hover:border-slate-500">Laporan Goods Receipt (XLSX)</button>
-          <button className="rounded-md border border-slate-300 px-3 py-2 text-sm font-medium text-slate-700 hover:border-slate-500">Laporan Arus Kas (PDF)</button>
-          <button className="rounded-md border border-slate-300 px-3 py-2 text-sm font-medium text-slate-700 hover:border-slate-500">Rekap Beban Operasional (CSV)</button>
+          <button className="rounded-md border border-slate-300 px-3 py-2 text-sm font-medium text-slate-700 hover:border-slate-500">
+            {locale === "en" ? "Sales Report (XLSX)" : "Laporan Penjualan (XLSX)"}
+          </button>
+          <button className="rounded-md border border-slate-300 px-3 py-2 text-sm font-medium text-slate-700 hover:border-slate-500">
+            {locale === "en" ? "Procurement Report (XLSX)" : "Laporan Procurement (XLSX)"}
+          </button>
+          <button className="rounded-md border border-slate-300 px-3 py-2 text-sm font-medium text-slate-700 hover:border-slate-500">
+            {locale === "en" ? "Goods Receipt Report (XLSX)" : "Laporan Goods Receipt (XLSX)"}
+          </button>
+          <button className="rounded-md border border-slate-300 px-3 py-2 text-sm font-medium text-slate-700 hover:border-slate-500">
+            {locale === "en" ? "Cash Flow Report (PDF)" : "Laporan Arus Kas (PDF)"}
+          </button>
+          <button className="rounded-md border border-slate-300 px-3 py-2 text-sm font-medium text-slate-700 hover:border-slate-500">
+            {locale === "en" ? "Operational Expense Summary (CSV)" : "Rekap Beban Operasional (CSV)"}
+          </button>
         </div>
       </section>
     </div>

@@ -14,6 +14,7 @@ export default function StockPage() {
   const items = useOfflineStore((state) => state.itemMasters);
   const warehouses = useOfflineStore((state) => state.warehouses);
   const addStock = useOfflineStore((state) => state.addStock);
+  const locale = useOfflineStore((state) => state.locale);
   const [itemId, setItemId] = useState("");
   const [warehouseId, setWarehouseId] = useState("");
   const [quantity, setQuantity] = useState("");
@@ -22,9 +23,9 @@ export default function StockPage() {
   const [msg, setMsg] = useState("");
 
   const stockTypeOptions = [
-    { value: "incoming", label: "Incoming" },
-    { value: "outgoing", label: "Outgoing" },
-    { value: "adjustment", label: "Adjustment" },
+    { value: "incoming", label: locale === "en" ? "Incoming" : "Masuk" },
+    { value: "outgoing", label: locale === "en" ? "Outgoing" : "Keluar" },
+    { value: "adjustment", label: locale === "en" ? "Adjustment" : "Penyesuaian" },
   ];
 
   const itemOptions = useMemo(
@@ -125,12 +126,12 @@ export default function StockPage() {
   const handleAddStock = (e: React.FormEvent) => {
     e.preventDefault();
     if (!itemId || !warehouseId || !quantity || !stockType) {
-      setMsg("Item, gudang, qty, dan jenis stok wajib diisi.");
+      setMsg(locale === "en" ? "Item, warehouse, qty, and stock type are required." : "Item, gudang, qty, dan jenis stok wajib diisi.");
       return;
     }
 
     addStock({ itemId, warehouseId, quantity: Number(quantity), stockType, orderId: orderId || undefined });
-    setMsg("Stok berhasil ditambahkan.");
+    setMsg(locale === "en" ? "Stock added successfully." : "Stok berhasil ditambahkan.");
     setItemId("");
     setWarehouseId("");
     setQuantity("");
@@ -142,40 +143,50 @@ export default function StockPage() {
     <div className="mx-auto max-w-6xl rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
       <div className="mb-4 flex items-center justify-between gap-3">
         <div>
-          <h1 className="text-xl font-semibold text-slate-900">Inventory Management</h1>
-          <p className="mt-1 text-sm text-slate-600">Input stok masuk, keluar, atau adjustment secara manual.</p>
+          <h1 className="text-xl font-semibold text-slate-900">{locale === "en" ? "Inventory Management" : "Inventory Management"}</h1>
+          <p className="mt-1 text-sm text-slate-600">
+            {locale === "en" ? "Record stock in, out, or adjustments manually." : "Input stok masuk, keluar, atau adjustment secara manual."}
+          </p>
         </div>
       </div>
 
       <form onSubmit={handleAddStock} className="mb-4 grid gap-3 md:grid-cols-2 xl:grid-cols-5">
         <Select options={itemOptions} value={itemId} onChange={(e) => setItemId(e.target.value)} required className="w-full" />
         <Select options={warehouseOptions} value={warehouseId} onChange={(e) => setWarehouseId(e.target.value)} required className="w-full" />
-        <Input type="number" min={1} value={quantity} onChange={(e) => setQuantity(e.target.value)} placeholder="Jumlah" className="w-full" required />
+        <Input type="number" min={1} value={quantity} onChange={(e) => setQuantity(e.target.value)} placeholder={locale === "en" ? "Quantity" : "Jumlah"} className="w-full" required />
         <Select options={stockTypeOptions} value={stockType} onChange={(e) => setStockType(e.target.value as Stock["stock_type"] | "")} required className="w-full" />
-        <Input value={orderId} onChange={(e) => setOrderId(e.target.value)} placeholder="Order ID (opsional)" className="w-full" />
-        <Button type="submit">+ Tambah Stock</Button>
+        <Input value={orderId} onChange={(e) => setOrderId(e.target.value)} placeholder={locale === "en" ? "Order ID (optional)" : "Order ID (opsional)"} className="w-full" />
+        <Button type="submit">{locale === "en" ? "+ Add Stock" : "+ Tambah Stock"}</Button>
       </form>
 
-      {msg && <p className="mb-4 text-sm text-emerald-700">{msg}</p>}
+      {msg && (
+        <p className={`mb-4 text-sm ${msg.includes("berhasil") ? "text-emerald-700" : "text-rose-600"}`}>
+          {msg}
+        </p>
+      )}
 
       <section className="mb-5 rounded-xl border border-slate-200 bg-slate-50 p-4">
-        <h2 className="text-sm font-semibold text-slate-900">Ringkasan Status Stok</h2>
-        <p className="mt-1 text-xs text-slate-500">In Stock sudah dikurangi pesanan (Ordered). Committed berasal dari PO yang belum diterima.</p>
+        <h2 className="text-sm font-semibold text-slate-900">{locale === "en" ? "Stock Status Summary" : "Ringkasan Status Stok"}</h2>
+        <p className="mt-1 text-xs text-slate-500">
+          {locale === "en"
+            ? "In Stock is reduced by ordered quantities. Committed comes from purchase orders not yet received."
+            : "In Stock sudah dikurangi pesanan (Ordered). Committed berasal dari PO yang belum diterima."}
+        </p>
         <div className="mt-3 overflow-x-auto">
           <table className="w-full text-sm">
             <thead className="text-left text-slate-600">
               <tr>
-                <th className="p-2">Item</th>
-                <th className="p-2">In Stock</th>
-                <th className="p-2">Ordered</th>
-                <th className="p-2">Committed</th>
-                <th className="p-2">Unit</th>
+                <th className="p-2">{locale === "en" ? "Item" : "Item"}</th>
+                <th className="p-2">{locale === "en" ? "In Stock" : "In Stock"}</th>
+                <th className="p-2">{locale === "en" ? "Ordered" : "Ordered"}</th>
+                <th className="p-2">{locale === "en" ? "Committed" : "Committed"}</th>
+                <th className="p-2">{locale === "en" ? "Unit" : "Unit"}</th>
               </tr>
             </thead>
             <tbody className="text-slate-700">
               {stockStatusSummary.length === 0 ? (
                 <tr>
-                  <td className="p-2 text-slate-500" colSpan={5}>Belum ada pergerakan stok.</td>
+                  <td className="p-2 text-slate-500" colSpan={5}>{locale === "en" ? "No stock movement yet." : "Belum ada pergerakan stok."}</td>
                 </tr>
               ) : (
                 stockStatusSummary.map((row) => (
@@ -194,14 +205,14 @@ export default function StockPage() {
       </section>
 
       <section className="mb-5 rounded-xl border border-slate-200 bg-white p-4">
-        <h2 className="text-sm font-semibold text-slate-900">Saldo Fisik per Item dan Gudang</h2>
+        <h2 className="text-sm font-semibold text-slate-900">{locale === "en" ? "Physical Balance by Item and Warehouse" : "Saldo Fisik per Item dan Gudang"}</h2>
         <div className="mt-3 overflow-x-auto">
           <table className="w-full text-sm">
             <thead className="text-left text-slate-600">
               <tr>
-                <th className="p-2">Item</th>
-                <th className="p-2">Gudang</th>
-                <th className="p-2">Stok</th>
+                <th className="p-2">{locale === "en" ? "Item" : "Item"}</th>
+                <th className="p-2">{locale === "en" ? "Warehouse" : "Gudang"}</th>
+                <th className="p-2">{locale === "en" ? "Stock" : "Stok"}</th>
               </tr>
             </thead>
             <tbody className="text-slate-700">
@@ -221,12 +232,12 @@ export default function StockPage() {
         <table className="w-full text-sm">
           <thead className="border-y border-slate-200 bg-slate-50 text-left text-slate-600">
             <tr>
-              <th className="p-3">Tanggal</th>
-              <th className="p-3">Item</th>
-              <th className="p-3">Gudang</th>
-              <th className="p-3">Jumlah</th>
-              <th className="p-3">Jenis</th>
-              <th className="p-3">Order</th>
+              <th className="p-3">{locale === "en" ? "Date" : "Tanggal"}</th>
+              <th className="p-3">{locale === "en" ? "Item" : "Item"}</th>
+              <th className="p-3">{locale === "en" ? "Warehouse" : "Gudang"}</th>
+              <th className="p-3">{locale === "en" ? "Quantity" : "Jumlah"}</th>
+              <th className="p-3">{locale === "en" ? "Type" : "Jenis"}</th>
+              <th className="p-3">{locale === "en" ? "Order" : "Order"}</th>
             </tr>
           </thead>
           <tbody className="text-slate-700">

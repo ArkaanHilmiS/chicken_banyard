@@ -14,6 +14,8 @@ export default function ProcurementPage() {
   const uoms = useOfflineStore((state) => state.unitOfMeasures);
   const priceMasters = useOfflineStore((state) => state.priceMasters);
   const addPurchase = useOfflineStore((state) => state.addPurchase);
+  const locale = useOfflineStore((state) => state.locale);
+  const numberLocale = locale === "en" ? "en-US" : "id-ID";
   const [vendorName, setVendorName] = useState("");
   const [itemName, setItemName] = useState("");
   const [vendorId, setVendorId] = useState("");
@@ -26,29 +28,39 @@ export default function ProcurementPage() {
 
   const vendorOptions = useMemo(
     () => parties
-      .filter((party) => party.party_type === "vendor" || party.party_type === "supplier")
+      .filter((party) => party.is_active && (party.party_type === "vendor" || party.party_type === "supplier"))
       .map((party) => ({ value: party.id, label: party.name })),
     [parties],
   );
 
   const itemOptions = useMemo(
-    () => items.map((item) => ({ value: item.id, label: `${item.sku} - ${item.name}` })),
+    () => items
+      .filter((item) => item.is_active)
+      .map((item) => ({ value: item.id, label: `${item.sku} - ${item.name}` })),
     [items],
   );
 
   const unitOptions = useMemo(
-    () => uoms.map((uom) => ({ value: uom.symbol, label: `${uom.name} (${uom.symbol})` })),
+    () => uoms
+      .filter((uom) => uom.is_active)
+      .map((uom) => ({ value: uom.symbol, label: `${uom.name} (${uom.symbol})` })),
     [uoms],
   );
 
   const categoryOptions = [
-    { value: "utility", label: "Utility" },
-    { value: "feed", label: "Feed" },
-    { value: "livestock", label: "Livestock" },
-    { value: "operational", label: "Operational" },
-    { value: "asset", label: "Asset" },
-    { value: "other", label: "Other" },
+    { value: "utility", label: locale === "en" ? "Utility" : "Utility" },
+    { value: "feed", label: locale === "en" ? "Feed" : "Pakan" },
+    { value: "livestock", label: locale === "en" ? "Livestock" : "Ternak" },
+    { value: "operational", label: locale === "en" ? "Operational" : "Operasional" },
+    { value: "asset", label: locale === "en" ? "Asset" : "Aset" },
+    { value: "other", label: locale === "en" ? "Other" : "Lainnya" },
   ];
+
+  const paymentStatusLabel = (value: string) => {
+    if (value === "paid") return locale === "en" ? "Paid" : "Lunas";
+    if (value === "partial") return locale === "en" ? "Partial" : "Parsial";
+    return locale === "en" ? "Pending" : "Pending";
+  };
 
   const inferCategoryFromItem = (itemCategory: string): Purchase["category"] => {
     const normalized = itemCategory.toLowerCase();
@@ -84,7 +96,7 @@ export default function ProcurementPage() {
   const handleAddPurchase = (e: React.FormEvent) => {
     e.preventDefault();
     if (!vendorName || !itemId || !itemName || !quantity || !unit || !unitPrice || !category) {
-      setMsg("Semua field wajib diisi.");
+      setMsg(locale === "en" ? "All fields are required." : "Semua field wajib diisi.");
       return;
     }
 
@@ -98,7 +110,7 @@ export default function ProcurementPage() {
       category,
     });
 
-    setMsg("Data pembelian berhasil ditambahkan.");
+    setMsg(locale === "en" ? "Purchase added successfully." : "Data pembelian berhasil ditambahkan.");
     setVendorName("");
     setItemName("");
     setVendorId("");
@@ -114,22 +126,30 @@ export default function ProcurementPage() {
       <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
         <form onSubmit={handleAddPurchase} className="space-y-4">
           <div>
-            <h1 className="text-xl font-semibold text-slate-900">Procurement</h1>
-            <p className="mt-1 text-sm text-slate-600">Kelola pembelian kebutuhan farm terintegrasi dengan master data vendor/supplier, item, unit, dan harga master.</p>
+            <h1 className="text-xl font-semibold text-slate-900">{locale === "en" ? "Procurement" : "Pengadaan"}</h1>
+            <p className="mt-1 text-sm text-slate-600">
+              {locale === "en"
+                ? "Manage farm purchases integrated with vendor/supplier master data, items, units, and price master."
+                : "Kelola pembelian kebutuhan farm terintegrasi dengan master data vendor/supplier, item, unit, dan harga master."}
+            </p>
           </div>
 
           <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
             <Select options={vendorOptions} value={vendorId} onChange={(e) => onVendorChange(e.target.value)} required className="w-full" />
             <Select options={itemOptions} value={itemId} onChange={(e) => onItemChange(e.target.value)} required className="w-full" />
-            <Input type="number" min={1} value={quantity} onChange={(e) => setQuantity(e.target.value)} placeholder="Qty" className="w-full" required />
+            <Input type="number" min={1} value={quantity} onChange={(e) => setQuantity(e.target.value)} placeholder={locale === "en" ? "Quantity" : "Qty"} className="w-full" required />
             <Select options={unitOptions} value={unit} onChange={(e) => setUnit(e.target.value)} required className="w-full" />
-            <Input type="number" min={1} value={unitPrice} onChange={(e) => setUnitPrice(e.target.value)} placeholder="Unit Price" className="w-full" required />
+            <Input type="number" min={1} value={unitPrice} onChange={(e) => setUnitPrice(e.target.value)} placeholder={locale === "en" ? "Unit Price" : "Harga Satuan"} className="w-full" required />
             <Select options={categoryOptions} value={category} onChange={(e) => setCategory(e.target.value as Purchase["category"] | "")} required className="w-full" />
           </div>
 
           <div className="flex items-center justify-between gap-3">
-            <Button type="submit">+ Buat Purchase</Button>
-            {msg && <p className="text-sm text-emerald-700">{msg}</p>}
+            <Button type="submit">{locale === "en" ? "+ Create Purchase" : "+ Buat Purchase"}</Button>
+            {msg && (
+              <p className={`text-sm ${msg.toLowerCase().includes("success") || msg.toLowerCase().includes("berhasil") ? "text-emerald-700" : "text-rose-600"}`}>
+                {msg}
+              </p>
+            )}
           </div>
         </form>
       </section>
@@ -139,19 +159,19 @@ export default function ProcurementPage() {
           <table className="w-full text-sm">
             <thead className="border-y border-slate-200 bg-slate-50 text-left text-slate-600">
               <tr>
-                <th className="p-3">Tanggal</th>
-                <th className="p-3">Vendor</th>
-                <th className="p-3">Item</th>
-                <th className="p-3">Qty</th>
-                <th className="p-3">Kategori</th>
-                <th className="p-3">Total</th>
-                <th className="p-3">Status</th>
+                <th className="p-3">{locale === "en" ? "Date" : "Tanggal"}</th>
+                <th className="p-3">{locale === "en" ? "Vendor" : "Vendor"}</th>
+                <th className="p-3">{locale === "en" ? "Item" : "Item"}</th>
+                <th className="p-3">{locale === "en" ? "Qty" : "Qty"}</th>
+                <th className="p-3">{locale === "en" ? "Category" : "Kategori"}</th>
+                <th className="p-3">{locale === "en" ? "Total" : "Total"}</th>
+                <th className="p-3">{locale === "en" ? "Status" : "Status"}</th>
               </tr>
             </thead>
             <tbody className="text-slate-700">
               {purchases.length === 0 ? (
                 <tr>
-                  <td className="p-3 text-slate-500" colSpan={7}>Belum ada data pembelian.</td>
+                  <td className="p-3 text-slate-500" colSpan={7}>{locale === "en" ? "No purchases yet." : "Belum ada data pembelian."}</td>
                 </tr>
               ) : (
                 purchases.map((p) => (
@@ -160,9 +180,9 @@ export default function ProcurementPage() {
                     <td className="p-3">{p.vendor_name}</td>
                     <td className="p-3">{p.item_name}</td>
                     <td className="p-3">{p.quantity} {p.unit}</td>
-                    <td className="p-3 capitalize">{p.category}</td>
-                    <td className="p-3">{p.total_price}</td>
-                    <td className="p-3 capitalize">{p.payment_status}</td>
+                    <td className="p-3 capitalize">{categoryOptions.find((option) => option.value === p.category)?.label ?? p.category}</td>
+                    <td className="p-3">{p.total_price.toLocaleString(numberLocale)}</td>
+                    <td className="p-3">{paymentStatusLabel(p.payment_status)}</td>
                   </tr>
                 ))
               )}

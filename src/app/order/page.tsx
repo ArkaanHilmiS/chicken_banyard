@@ -5,12 +5,6 @@ import Select from "@/components/ui/select";
 import Button from "@/components/ui/button";
 import { useOfflineStore } from "@/lib/offlineStore";
 
-// Opsi dropdown sesuai enum pada database
-const serviceMethods = [
-  { value: "antar", label: "Antar" },
-  { value: "ambil", label: "Ambil Sendiri" },
-];
-
 export default function OrderPage() {
   const addOrder = useOfflineStore((state) => state.addOrder);
   const updateOrderStatus = useOfflineStore((state) => state.updateOrderStatus);
@@ -18,6 +12,12 @@ export default function OrderPage() {
   const parties = useOfflineStore((state) => state.masterParties);
   const itemMasters = useOfflineStore((state) => state.itemMasters);
   const priceMasters = useOfflineStore((state) => state.priceMasters);
+  const locale = useOfflineStore((state) => state.locale);
+  const numberLocale = locale === "en" ? "en-US" : "id-ID";
+    const serviceMethods = [
+      { value: "antar", label: locale === "en" ? "Delivery" : "Antar" },
+      { value: "ambil", label: locale === "en" ? "Pick Up" : "Ambil Sendiri" },
+    ];
   const [customerId, setCustomerId] = useState("");
   const [itemId, setItemId] = useState("");
   const [qty, setQty] = useState("");
@@ -29,13 +29,13 @@ export default function OrderPage() {
   const [msg, setMsg] = useState("");
 
   const orderStatusOptions = [
-    { value: "pending", label: "Pending" },
-    { value: "delivered", label: "Delivered" },
-    { value: "cancelled", label: "Cancelled" },
+    { value: "pending", label: locale === "en" ? "Pending" : "Pending" },
+    { value: "delivered", label: locale === "en" ? "Delivered" : "Terkirim" },
+    { value: "cancelled", label: locale === "en" ? "Cancelled" : "Dibatalkan" },
   ];
 
   const paymentMethodOptions = [
-    { value: "cash", label: "Cash" },
+    { value: "cash", label: locale === "en" ? "Cash" : "Tunai" },
     { value: "qris", label: "QRIS" },
   ];
 
@@ -61,7 +61,7 @@ export default function OrderPage() {
 
   const customerOptions = useMemo(
     () => parties
-      .filter((party) => party.party_type === "customer")
+      .filter((party) => party.is_active && party.party_type === "customer")
       .map((party) => ({ value: party.id, label: party.name })),
     [parties],
   );
@@ -81,7 +81,7 @@ export default function OrderPage() {
     e.preventDefault();
     // Validasi sederhana
     if (!itemId || !qty || !serviceMethod || !address || !paymentMethod || !deliveryDate || !deliveryTime) {
-      setMsg("Semua field wajib diisi");
+      setMsg(locale === "en" ? "All fields are required." : "Semua field wajib diisi");
       return;
     }
     addOrder({
@@ -93,7 +93,7 @@ export default function OrderPage() {
       deliveryDate,
       deliveryTime,
     });
-    setMsg("Pesanan berhasil dicatat dengan status Pending.");
+    setMsg(locale === "en" ? "Order saved with Pending status." : "Pesanan berhasil dicatat dengan status Pending.");
     setCustomerId("");
     setItemId("");
     setQty("");
@@ -111,8 +111,12 @@ export default function OrderPage() {
   return (
     <div className="mx-auto grid max-w-6xl gap-4 lg:grid-cols-3">
       <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm lg:col-span-2">
-        <h1 className="text-xl font-semibold text-slate-900">Sales Order Baru</h1>
-        <p className="mt-1 text-sm text-slate-600">Input detail pesanan pelanggan. Status awal pending dan dapat diubah untuk progress operasional.</p>
+        <h1 className="text-xl font-semibold text-slate-900">{locale === "en" ? "New Sales Order" : "Sales Order Baru"}</h1>
+        <p className="mt-1 text-sm text-slate-600">
+          {locale === "en"
+            ? "Enter customer order details. New orders start as pending and can be updated as operations progress."
+            : "Input detail pesanan pelanggan. Status awal pending dan dapat diubah untuk progress operasional."}
+        </p>
 
         <form onSubmit={handleOrder} className="mt-5 space-y-3">
           <Select
@@ -133,7 +137,7 @@ export default function OrderPage() {
             type="number"
             value={qty}
             onChange={(e) => setQty(e.target.value)}
-            placeholder={`Jumlah (${selectedItem?.default_uom || "unit"})`}
+            placeholder={locale === "en" ? `Quantity (${selectedItem?.default_uom || "unit"})` : `Jumlah (${selectedItem?.default_uom || "unit"})`}
             required
             min={1}
             className="w-full"
@@ -172,17 +176,17 @@ export default function OrderPage() {
             type="text"
             value={address}
             onChange={(e) => setAddress(e.target.value)}
-            placeholder="Alamat lengkap"
+            placeholder={locale === "en" ? "Full address" : "Alamat lengkap"}
             required
             className="w-full"
           />
-          <Button type="submit" className="w-full">Simpan Order</Button>
+          <Button type="submit" className="w-full">{locale === "en" ? "Save Order" : "Simpan Order"}</Button>
           <div className="rounded-xl border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm text-emerald-900">
-            <p>Harga Satuan: Rp {currentUnitPrice.toLocaleString("id-ID")}</p>
-            <p className="font-semibold">Total Harga: Rp {estimatedTotal.toLocaleString("id-ID")}</p>
+            <p>{locale === "en" ? "Unit Price" : "Harga Satuan"}: Rp {currentUnitPrice.toLocaleString(numberLocale)}</p>
+            <p className="font-semibold">{locale === "en" ? "Total Price" : "Total Harga"}: Rp {estimatedTotal.toLocaleString(numberLocale)}</p>
           </div>
           {msg && (
-            <div className={`mt-2 text-sm ${msg.includes("berhasil") ? "text-emerald-700" : "text-red-600"}`}>
+            <div className={`mt-2 text-sm ${msg.toLowerCase().includes("success") || msg.toLowerCase().includes("berhasil") ? "text-emerald-700" : "text-red-600"}`}>
               {msg}
             </div>
           )}
@@ -190,35 +194,39 @@ export default function OrderPage() {
       </section>
 
       <aside className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
-        <h2 className="text-base font-semibold text-slate-900">Catatan Status</h2>
+        <h2 className="text-base font-semibold text-slate-900">{locale === "en" ? "Status Notes" : "Catatan Status"}</h2>
         <ul className="mt-3 space-y-2 text-sm text-slate-600">
-          <li>Order baru otomatis berstatus Pending.</li>
-          <li>Status Paid hanya bisa diubah lewat modul Payment.</li>
-          <li>Delivery hanya bisa ditandai setelah pembayaran tercatat.</li>
+          <li>{locale === "en" ? "New orders start as Pending." : "Order baru otomatis berstatus Pending."}</li>
+          <li>{locale === "en" ? "Paid status can only be changed in the Payment module." : "Status Paid hanya bisa diubah lewat modul Payment."}</li>
+          <li>{locale === "en" ? "Delivery can be marked only after payment is recorded." : "Delivery hanya bisa ditandai setelah pembayaran tercatat."}</li>
         </ul>
       </aside>
 
       <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm lg:col-span-3">
-        <h2 className="text-lg font-semibold text-slate-900">Detail Pesanan Sales</h2>
-        <p className="mt-1 text-sm text-slate-600">Pantau detail order dan update status kapan saja sesuai proses lapangan.</p>
+        <h2 className="text-lg font-semibold text-slate-900">{locale === "en" ? "Sales Order Details" : "Detail Pesanan Sales"}</h2>
+        <p className="mt-1 text-sm text-slate-600">
+          {locale === "en"
+            ? "Track order details and update status based on field operations."
+            : "Pantau detail order dan update status kapan saja sesuai proses lapangan."}
+        </p>
 
         <div className="mt-4 overflow-x-auto">
           <table className="w-full text-sm">
             <thead className="border-y border-slate-200 bg-slate-50 text-left text-slate-600">
               <tr>
-                <th className="p-3">Order ID</th>
-                <th className="p-3">Tanggal Order</th>
-                <th className="p-3">Detail</th>
-                <th className="p-3">Layanan</th>
-                <th className="p-3">Pengiriman</th>
-                <th className="p-3">Pembayaran</th>
-                <th className="p-3">Status</th>
+                <th className="p-3">{locale === "en" ? "Order ID" : "Order ID"}</th>
+                <th className="p-3">{locale === "en" ? "Order Date" : "Tanggal Order"}</th>
+                <th className="p-3">{locale === "en" ? "Details" : "Detail"}</th>
+                <th className="p-3">{locale === "en" ? "Service" : "Layanan"}</th>
+                <th className="p-3">{locale === "en" ? "Delivery" : "Pengiriman"}</th>
+                <th className="p-3">{locale === "en" ? "Payment" : "Pembayaran"}</th>
+                <th className="p-3">{locale === "en" ? "Status" : "Status"}</th>
               </tr>
             </thead>
             <tbody className="text-slate-700">
               {orders.length === 0 ? (
                 <tr>
-                  <td className="p-3 text-slate-500" colSpan={7}>Belum ada pesanan sales.</td>
+                  <td className="p-3 text-slate-500" colSpan={7}>{locale === "en" ? "No sales orders yet." : "Belum ada pesanan sales."}</td>
                 </tr>
               ) : (
                 orders.map((order) => (
@@ -227,11 +235,11 @@ export default function OrderPage() {
                     <td className="p-3">{order.order_date}</td>
                     <td className="p-3">
                       <div>{order.item_name}</div>
-                      <div>{order.quantity} {order.unit} x Rp {order.unit_price_at_order.toLocaleString("id-ID")}</div>
-                      <div className="text-slate-500">Total: Rp {order.total_price.toLocaleString("id-ID")}</div>
-                      <div className="text-slate-500">Alamat: {order.address}</div>
+                      <div>{order.quantity} {order.unit} x Rp {order.unit_price_at_order.toLocaleString(numberLocale)}</div>
+                      <div className="text-slate-500">{locale === "en" ? "Total" : "Total"}: Rp {order.total_price.toLocaleString(numberLocale)}</div>
+                      <div className="text-slate-500">{locale === "en" ? "Address" : "Alamat"}: {order.address}</div>
                     </td>
-                    <td className="p-3 capitalize">{order.service_method}</td>
+                    <td className="p-3 capitalize">{order.service_method === "antar" ? (locale === "en" ? "delivery" : "antar") : (locale === "en" ? "pickup" : "ambil")}</td>
                     <td className="p-3">{order.delivery_date} {order.delivery_time}</td>
                     <td className="p-3 uppercase">{order.payment_method}</td>
                     <td className="p-3">

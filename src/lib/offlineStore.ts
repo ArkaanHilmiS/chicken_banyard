@@ -12,6 +12,7 @@ import type { Stock } from "@/types/stock";
 import type { UnitOfMeasure } from "@/types/unitOfMeasure";
 import type { User } from "@/types/user";
 import type { Warehouse } from "@/types/warehouse";
+import type { ChartOfAccount } from "@/types/coa";
 
 type AuthUser = User & { password: string };
 
@@ -28,6 +29,7 @@ interface OfflineStoreState {
   prices: Price[];
   purchases: Purchase[];
   goodsReceipts: GoodsReceipt[];
+  chartOfAccounts: ChartOfAccount[];
   masterParties: MasterParty[];
   itemMasters: ItemMaster[];
   priceMasters: PriceMaster[];
@@ -73,6 +75,8 @@ interface OfflineStoreState {
     paymentMethod?: "cash" | "qris";
     transactionMethod?: "cash-in" | "cash-out" | "transfer" | "hybrid";
   }) => void;
+  addChartOfAccount: (input: { code: string; name: string; category: ChartOfAccount["category"]; isActive?: boolean }) => { ok: boolean; message: string };
+  toggleChartOfAccount: (accountId: string) => void;
   addMasterParty: (input: {
     partyType: MasterParty["party_type"];
     name: string;
@@ -107,10 +111,7 @@ const toExpenseCategoryFromPaymentFor = (
   return "other";
 };
 
-const seedPrices: Price[] = [
-  { id: "PR-001", price_date: today(), price_per_kg: 31000, created_at: nowIso() },
-  { id: "PR-000", price_date: "2026-03-29", price_per_kg: 30500, created_at: nowIso() },
-];
+const seedPrices: Price[] = [];
 
 const seedUsers: AuthUser[] = [
   {
@@ -126,212 +127,55 @@ const seedUsers: AuthUser[] = [
   },
 ];
 
-const seedOrders: Order[] = [
-  {
-    id: "SO-240301",
-    user_id: "USR-001",
-    order_date: today(),
-    item_id: "ITM-001",
-    item_name: "Telur Layer Grade A",
-    quantity: 120,
-    unit: "kg",
-    delivery_date: today(),
-    delivery_time: "08:00",
-    service_method: "antar",
-    address: "Toko Kuning",
-    payment_method: "cash",
-    payment_status: "pending",
-    receipt_confirmed: false,
-    unit_price_at_order: 31000,
-    total_price: 3720000,
-    order_status: "pending",
-    payment_id: "",
-    created_at: nowIso(),
-  },
+const seedOrders: Order[] = [];
+
+const seedPayments: Payment[] = [];
+
+const seedJournals: Journal[] = [];
+
+const seedStocks: Stock[] = [];
+
+const seedPurchases: Purchase[] = [];
+
+const seedGoodsReceipts: GoodsReceipt[] = [];
+
+const seedChartOfAccounts: ChartOfAccount[] = [
+  { id: "COA-1101", code: "1101", name: "Kas", category: "aset", is_active: true, created_at: nowIso() },
+  { id: "COA-1102", code: "1102", name: "Bank", category: "aset", is_active: true, created_at: nowIso() },
+  { id: "COA-1201", code: "1201", name: "Piutang Usaha", category: "aset", is_active: true, created_at: nowIso() },
+  { id: "COA-1301", code: "1301", name: "Persediaan Telur", category: "aset", is_active: true, created_at: nowIso() },
+  { id: "COA-1302", code: "1302", name: "Persediaan Pakan", category: "aset", is_active: true, created_at: nowIso() },
+  { id: "COA-1303", code: "1303", name: "Persediaan Bahan" , category: "aset", is_active: true, created_at: nowIso() },
+  { id: "COA-1401", code: "1401", name: "Biaya Dibayar Dimuka", category: "aset", is_active: true, created_at: nowIso() },
+  { id: "COA-1501", code: "1501", name: "Aset Tetap", category: "aset", is_active: true, created_at: nowIso() },
+  { id: "COA-1502", code: "1502", name: "Akumulasi Penyusutan", category: "aset", is_active: true, created_at: nowIso() },
+
+  { id: "COA-2101", code: "2101", name: "Utang Usaha", category: "liabilitas", is_active: true, created_at: nowIso() },
+  { id: "COA-2102", code: "2102", name: "Utang Pajak", category: "liabilitas", is_active: true, created_at: nowIso() },
+  { id: "COA-2103", code: "2103", name: "Utang Gaji", category: "liabilitas", is_active: true, created_at: nowIso() },
+  { id: "COA-2104", code: "2104", name: "Pendapatan Diterima Dimuka", category: "liabilitas", is_active: true, created_at: nowIso() },
+
+  { id: "COA-3101", code: "3101", name: "Modal Pemilik", category: "modal", is_active: true, created_at: nowIso() },
+  { id: "COA-3201", code: "3201", name: "Laba Ditahan", category: "modal", is_active: true, created_at: nowIso() },
+
+  { id: "COA-4101", code: "4101", name: "Penjualan Telur", category: "pendapatan", is_active: true, created_at: nowIso() },
+  { id: "COA-4102", code: "4102", name: "Pendapatan Lainnya", category: "pendapatan", is_active: true, created_at: nowIso() },
+
+  { id: "COA-5101", code: "5101", name: "Beban Pakan", category: "beban", is_active: true, created_at: nowIso() },
+  { id: "COA-5102", code: "5102", name: "Beban Listrik & Air", category: "beban", is_active: true, created_at: nowIso() },
+  { id: "COA-5103", code: "5103", name: "Beban Tenaga Kerja", category: "beban", is_active: true, created_at: nowIso() },
+  { id: "COA-5104", code: "5104", name: "Beban Pengiriman", category: "beban", is_active: true, created_at: nowIso() },
+  { id: "COA-5105", code: "5105", name: "Beban Perawatan", category: "beban", is_active: true, created_at: nowIso() },
+  { id: "COA-5106", code: "5106", name: "Beban Penyusutan", category: "beban", is_active: true, created_at: nowIso() },
+  { id: "COA-5107", code: "5107", name: "Beban Administrasi", category: "beban", is_active: true, created_at: nowIso() },
+  { id: "COA-5108", code: "5108", name: "Beban Pemasaran", category: "beban", is_active: true, created_at: nowIso() },
 ];
 
-const seedPayments: Payment[] = [
-  {
-    id: "PMT-001",
-    order_id: "SO-240301",
-    payment_date: today(),
-    payment_method: "cash",
-    payment_direction: "incoming",
-    payment_for: "sales",
-    is_paid: false,
-    amount: 3720000,
-    created_at: nowIso(),
-  },
-  {
-    id: "PMT-002",
-    order_id: "",
-    payment_date: today(),
-    payment_method: "qris",
-    payment_direction: "outgoing",
-    payment_for: "electricity",
-    expense_category: "utility",
-    vendor_name: "PLN",
-    is_paid: true,
-    amount: 850000,
-    created_at: nowIso(),
-  },
-];
+const seedMasterParties: MasterParty[] = [];
 
-const seedJournals: Journal[] = [
-  {
-    id: "JRN-001",
-    transaction_date: today(),
-    description: "Penjualan telur SO-240301",
-    type: "cash-in",
-    amount: 3720000,
-    category: "pendapatan",
-    ref_table: "orders",
-    ref_id: "SO-240301",
-    user_id: "USR-001",
-    created_at: nowIso(),
-  },
-  {
-    id: "JRN-002",
-    transaction_date: today(),
-    description: "Pembayaran listrik bulanan",
-    type: "cash-out",
-    amount: 850000,
-    category: "beban",
-    ref_table: "payments",
-    ref_id: "PMT-002",
-    user_id: "USR-001",
-    created_at: nowIso(),
-  },
-];
+const seedUnitOfMeasures: UnitOfMeasure[] = [];
 
-const seedStocks: Stock[] = [
-  {
-    id: "STK-001",
-    stock_date: today(),
-    item_id: "ITM-001",
-    item_name: "Telur Layer Grade A",
-    unit: "kg",
-    quantity: 1420,
-    warehouse_id: "WH-001",
-    warehouse_name: "Gudang Telur",
-    stock_type: "incoming",
-    created_at: nowIso(),
-  },
-];
-
-const seedPurchases: Purchase[] = [
-  {
-    id: "PO-001",
-    purchase_date: today(),
-    vendor_name: "CV Pakan Jaya",
-    item_id: "ITM-002",
-    item_name: "Pakan Layer",
-    quantity: 25,
-    unit: "sak",
-    unit_price: 270000,
-    total_price: 6750000,
-    category: "feed",
-    payment_status: "pending",
-    notes: "Kebutuhan 1 minggu",
-    created_at: nowIso(),
-  },
-];
-
-const seedGoodsReceipts: GoodsReceipt[] = [
-  {
-    id: "GR-001",
-    receipt_date: today(),
-    purchase_id: "PO-001",
-    vendor_name: "CV Pakan Jaya",
-    item_id: "ITM-002",
-    item_name: "Pakan Layer",
-    quantity_received: 25,
-    unit: "sak",
-    condition: "good",
-    warehouse_id: "WH-002",
-    warehouse_location: "Gudang A",
-    received_by: "Admin Farm",
-    created_at: nowIso(),
-  },
-];
-
-const seedMasterParties: MasterParty[] = [
-  {
-    id: "MST-001",
-    party_type: "customer",
-    name: "Toko Kuning",
-    phone: "081300000001",
-    address: "Pasar Tengah",
-    preferred_payment_method: "cash",
-    preferred_transaction_method: "cash-in",
-    total_transaction_rp: 3720000,
-    transaction_count: 1,
-    created_at: nowIso(),
-  },
-  {
-    id: "MST-002",
-    party_type: "supplier",
-    name: "CV Pakan Jaya",
-    npwp: "01.234.567.8-901.000",
-    bank_name: "BCA",
-    bank_account_number: "1234567890",
-    bank_account_name: "CV Pakan Jaya",
-    preferred_payment_method: "qris",
-    preferred_transaction_method: "cash-out",
-    total_transaction_rp: 6750000,
-    transaction_count: 1,
-    created_at: nowIso(),
-  },
-];
-
-const seedUnitOfMeasures: UnitOfMeasure[] = [
-  { id: "UOM-001", name: "Kilogram", symbol: "kg", is_active: true, created_at: nowIso() },
-  { id: "UOM-002", name: "Sak", symbol: "sak", is_active: true, created_at: nowIso() },
-  { id: "UOM-003", name: "Paket", symbol: "paket", is_active: true, created_at: nowIso() },
-  { id: "UOM-004", name: "Liter", symbol: "liter", is_active: true, created_at: nowIso() },
-];
-
-const seedItemMasters: ItemMaster[] = [
-  {
-    id: "ITM-001",
-    sku: "TELUR-LAYER-001",
-    name: "Telur Layer Grade A",
-    category: "Produk Utama",
-    default_uom: "kg",
-    purchase_price: 28000,
-    selling_price: 31000,
-    min_stock: 500,
-    description: "Produk telur utama penjualan harian",
-    is_active: true,
-    created_at: nowIso(),
-  },
-  {
-    id: "ITM-002",
-    sku: "PAKAN-LAYER-001",
-    name: "Pakan Layer",
-    category: "Bahan Baku",
-    default_uom: "sak",
-    purchase_price: 270000,
-    selling_price: 0,
-    min_stock: 10,
-    description: "Pakan konsumsi ayam petelur",
-    is_active: true,
-    created_at: nowIso(),
-  },
-  {
-    id: "ITM-003",
-    sku: "AIR-MINUM-001",
-    name: "Air Minum Ternak",
-    category: "Utility",
-    default_uom: "liter",
-    purchase_price: 500,
-    selling_price: 0,
-    min_stock: 500,
-    description: "Kebutuhan air bersih ternak",
-    is_active: true,
-    created_at: nowIso(),
-  },
-];
+const seedItemMasters: ItemMaster[] = [];
 
 const seedWarehouses: Warehouse[] = [
   { id: "WH-001", name: "Gudang Telur", code: "GDT", location: "Zona Produksi", is_active: true, created_at: nowIso() },
@@ -339,32 +183,7 @@ const seedWarehouses: Warehouse[] = [
   { id: "WH-003", name: "Tangki Air", code: "TGA", location: "Zona Utilitas", is_active: true, created_at: nowIso() },
 ];
 
-const seedPriceMasters: PriceMaster[] = [
-  {
-    id: "PM-001",
-    item_id: "ITM-001",
-    item_name: "Telur Layer Grade A",
-    uom: "kg",
-    price_type: "selling",
-    price_value: 31000,
-    effective_date: today(),
-    payment_method: "cash",
-    transaction_method: "cash-in",
-    created_at: nowIso(),
-  },
-  {
-    id: "PM-002",
-    item_id: "ITM-002",
-    item_name: "Pakan Layer",
-    uom: "sak",
-    price_type: "purchase",
-    price_value: 270000,
-    effective_date: today(),
-    payment_method: "qris",
-    transaction_method: "cash-out",
-    created_at: nowIso(),
-  },
-];
+const seedPriceMasters: PriceMaster[] = [];
 
 export const useOfflineStore = create<OfflineStoreState>((set, get) => ({
   orders: seedOrders,
@@ -374,6 +193,7 @@ export const useOfflineStore = create<OfflineStoreState>((set, get) => ({
   prices: seedPrices,
   purchases: seedPurchases,
   goodsReceipts: seedGoodsReceipts,
+  chartOfAccounts: seedChartOfAccounts,
   masterParties: seedMasterParties,
   itemMasters: seedItemMasters,
   priceMasters: seedPriceMasters,
@@ -443,15 +263,38 @@ export const useOfflineStore = create<OfflineStoreState>((set, get) => ({
   },
 
   updateOrderStatus: (orderId, status) => {
-    set((state) => ({
-      orders: state.orders.map((order) => {
-        if (order.id !== orderId) return order;
+    set((state) => {
+      let deliveryStock: Stock | null = null;
 
-        const paymentStatus = status === "paid"
-          ? "paid"
-          : status === "cancelled"
-            ? "cancelled"
-            : order.payment_status;
+      const updatedOrders = state.orders.map((order) => {
+        if (order.id !== orderId) return order;
+        if (status === "paid") return order;
+        if (status === "delivered" && order.payment_status !== "paid") return order;
+
+        const paymentStatus = status === "cancelled"
+          ? "cancelled"
+          : order.payment_status;
+
+        if (status === "delivered" && order.order_status !== "delivered") {
+          const latestStockForItem = state.stocks.find((row) => row.item_id === order.item_id);
+          const selectedWarehouse = latestStockForItem
+            ? { id: latestStockForItem.warehouse_id, name: latestStockForItem.warehouse_name }
+            : { id: "WH-001", name: "Gudang Telur" };
+
+          deliveryStock = {
+            id: makeId("STK"),
+            stock_date: today(),
+            item_id: order.item_id,
+            item_name: order.item_name,
+            unit: order.unit,
+            quantity: order.quantity,
+            warehouse_id: selectedWarehouse.id,
+            warehouse_name: selectedWarehouse.name,
+            stock_type: "outgoing",
+            order_id: order.id,
+            created_at: nowIso(),
+          };
+        }
 
         return {
           ...order,
@@ -459,8 +302,13 @@ export const useOfflineStore = create<OfflineStoreState>((set, get) => ({
           payment_status: paymentStatus,
           receipt_confirmed: status === "delivered" ? true : order.receipt_confirmed,
         };
-      }),
-    }));
+      });
+
+      return {
+        orders: updatedOrders,
+        stocks: deliveryStock ? [deliveryStock, ...state.stocks] : state.stocks,
+      };
+    });
   },
 
   addPurchase: ({ vendorName, itemId, itemName, quantity, unit, unitPrice, category }) => {
@@ -600,35 +448,9 @@ export const useOfflineStore = create<OfflineStoreState>((set, get) => ({
       created_at: nowIso(),
     };
 
-    const stockFromSales: Stock | null = (() => {
-      if (!isIncoming || !referenceId) return null;
-      const order = get().orders.find((row) => row.id === referenceId);
-      if (!order) return null;
-
-      const latestStockForItem = get().stocks.find((row) => row.item_id === order.item_id);
-      const selectedWarehouse = latestStockForItem
-        ? { id: latestStockForItem.warehouse_id, name: latestStockForItem.warehouse_name }
-        : { id: "WH-001", name: "Gudang Telur" };
-
-      return {
-        id: makeId("STK"),
-        stock_date: today(),
-        item_id: order.item_id,
-        item_name: order.item_name,
-        unit: order.unit,
-        quantity: order.quantity,
-        warehouse_id: selectedWarehouse.id,
-        warehouse_name: selectedWarehouse.name,
-        stock_type: "outgoing",
-        order_id: order.id,
-        created_at: nowIso(),
-      };
-    })();
-
     set((state) => ({
       payments: [newPayment, ...state.payments],
       journals: [newJournal, ...state.journals],
-      stocks: stockFromSales ? [stockFromSales, ...state.stocks] : state.stocks,
       orders: state.orders.map((order) => {
         if (!isIncoming || !referenceId || order.id !== referenceId) return order;
         return {
@@ -637,7 +459,7 @@ export const useOfflineStore = create<OfflineStoreState>((set, get) => ({
           order_status: "paid",
           payment_method: method,
           payment_id: newPayment.id,
-          receipt_confirmed: true,
+          receipt_confirmed: order.receipt_confirmed,
         };
       }),
       purchases: state.purchases.map((purchase) => {
@@ -785,6 +607,37 @@ export const useOfflineStore = create<OfflineStoreState>((set, get) => ({
     };
 
     set((state) => ({ priceMasters: [newPriceMaster, ...state.priceMasters] }));
+  },
+
+  addChartOfAccount: ({ code, name, category, isActive }) => {
+    const trimmedCode = code.trim();
+    const trimmedName = name.trim();
+    if (!trimmedCode || !trimmedName) return { ok: false, message: "Kode dan nama akun wajib diisi." };
+
+    const exists = get().chartOfAccounts.some((account) => account.code === trimmedCode);
+    if (exists) return { ok: false, message: "Kode COA sudah terdaftar." };
+
+    const newAccount: ChartOfAccount = {
+      id: makeId("COA"),
+      code: trimmedCode,
+      name: trimmedName,
+      category,
+      is_active: isActive ?? true,
+      created_at: nowIso(),
+    };
+
+    set((state) => ({ chartOfAccounts: [newAccount, ...state.chartOfAccounts] }));
+    return { ok: true, message: "COA berhasil ditambahkan." };
+  },
+
+  toggleChartOfAccount: (accountId) => {
+    set((state) => ({
+      chartOfAccounts: state.chartOfAccounts.map((account) =>
+        account.id === accountId
+          ? { ...account, is_active: !account.is_active }
+          : account,
+      ),
+    }));
   },
 
   addMasterParty: ({

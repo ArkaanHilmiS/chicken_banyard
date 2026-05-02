@@ -30,7 +30,6 @@ export default function OrderPage() {
 
   const orderStatusOptions = [
     { value: "pending", label: "Pending" },
-    { value: "paid", label: "Paid" },
     { value: "delivered", label: "Delivered" },
     { value: "cancelled", label: "Cancelled" },
   ];
@@ -105,7 +104,7 @@ export default function OrderPage() {
     setAddress("");
   };
 
-  const handleStatusChange = (orderId: string, status: "pending" | "paid" | "cancelled" | "delivered") => {
+  const handleStatusChange = (orderId: string, status: "pending" | "cancelled" | "delivered") => {
     updateOrderStatus(orderId, status);
   };
 
@@ -194,8 +193,8 @@ export default function OrderPage() {
         <h2 className="text-base font-semibold text-slate-900">Catatan Status</h2>
         <ul className="mt-3 space-y-2 text-sm text-slate-600">
           <li>Order baru otomatis berstatus Pending.</li>
-          <li>Status bisa diubah jadi Paid, Delivered, atau Cancelled.</li>
-          <li>Gunakan Payment module untuk pencatatan pembayaran final.</li>
+          <li>Status Paid hanya bisa diubah lewat modul Payment.</li>
+          <li>Delivery hanya bisa ditandai setelah pembayaran tercatat.</li>
         </ul>
       </aside>
 
@@ -237,9 +236,11 @@ export default function OrderPage() {
                     <td className="p-3 uppercase">{order.payment_method}</td>
                     <td className="p-3">
                       <Select
-                        options={orderStatusOptions}
+                        options={orderStatusOptions.filter((option) =>
+                          option.value !== "delivered" || order.payment_status === "paid" || order.order_status === "delivered",
+                        )}
                         value={order.order_status}
-                        onChange={(e) => handleStatusChange(order.id, e.target.value as "pending" | "paid" | "cancelled" | "delivered")}
+                        onChange={(e) => handleStatusChange(order.id, e.target.value as "pending" | "cancelled" | "delivered")}
                         className="w-full"
                       />
                     </td>

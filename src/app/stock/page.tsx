@@ -8,6 +8,9 @@ import type { Stock } from "@/types/stock";
 
 export default function StockPage() {
   const stocks = useOfflineStore((state) => state.stocks);
+  const orders = useOfflineStore((state) => state.orders);
+  const purchases = useOfflineStore((state) => state.purchases);
+  const goodsReceipts = useOfflineStore((state) => state.goodsReceipts);
   const items = useOfflineStore((state) => state.itemMasters);
   const warehouses = useOfflineStore((state) => state.warehouses);
   const addStock = useOfflineStore((state) => state.addStock);
@@ -57,6 +60,68 @@ export default function StockPage() {
     return Array.from(summary.values()).sort((a, b) => a.itemName.localeCompare(b.itemName));
   }, [stocks]);
 
+  const receivedByPurchase = useMemo(() => {
+    const summary = new Map<string, number>();
+    for (const receipt of goodsReceipts) {
+      if (!receipt.purchase_id) continue;
+      summary.set(receipt.purchase_id, (summary.get(receipt.purchase_id) || 0) + receipt.quantity_received);
+    }
+    return summary;
+  }, [goodsReceipts]);
+
+  const orderedByItem = useMemo(() => {
+    const summary = new Map<string, number>();
+    for (const order of orders) {
+      if (order.order_status === "cancelled" || order.order_status === "delivered") continue;
+      summary.set(order.item_id, (summary.get(order.item_id) || 0) + order.quantity);
+    }
+    return summary;
+  }, [orders]);
+
+  const committedByItem = useMemo(() => {
+    const summary = new Map<string, number>();
+    for (const purchase of purchases) {
+      const received = purchase.id ? receivedByPurchase.get(purchase.id) || 0 : 0;
+      const remaining = Math.max(0, purchase.quantity - received);
+      if (remaining <= 0) continue;
+      summary.set(purchase.item_id, (summary.get(purchase.item_id) || 0) + remaining);
+    }
+    return summary;
+  }, [purchases, receivedByPurchase]);
+
+  const stockStatusSummary = useMemo(() => {
+    const onHandByItem = new Map<string, { itemName: string; unit: string; onHand: number }>();
+    for (const row of stocks) {
+      const current = onHandByItem.get(row.item_id) || {
+        itemName: row.item_name,
+        unit: row.unit,
+        onHand: 0,
+      };
+      const signedQty = row.stock_type === "outgoing" ? -row.quantity : row.quantity;
+      current.onHand += signedQty;
+      onHandByItem.set(row.item_id, current);
+    }
+
+    return items
+      .filter((item) => item.is_active)
+      .map((item) => {
+        const onHand = onHandByItem.get(item.id)?.onHand ?? 0;
+        const ordered = orderedByItem.get(item.id) || 0;
+        const committed = committedByItem.get(item.id) || 0;
+        const available = onHand - ordered;
+
+        return {
+          itemName: item.name,
+          unit: item.default_uom,
+          inStock: available,
+          ordered,
+          committed,
+        };
+      })
+      .filter((row) => row.inStock !== 0 || row.ordered !== 0 || row.committed !== 0)
+      .sort((a, b) => a.itemName.localeCompare(b.itemName));
+  }, [items, stocks, orderedByItem, committedByItem]);
+
   const handleAddStock = (e: React.FormEvent) => {
     e.preventDefault();
     if (!itemId || !warehouseId || !quantity || !stockType) {
@@ -94,7 +159,42 @@ export default function StockPage() {
       {msg && <p className="mb-4 text-sm text-emerald-700">{msg}</p>}
 
       <section className="mb-5 rounded-xl border border-slate-200 bg-slate-50 p-4">
-        <h2 className="text-sm font-semibold text-slate-900">Ringkasan Inventory per Item dan Gudang</h2>
+        <h2 className="text-sm font-semibold text-slate-900">Ringkasan Status Stok</h2>
+        <p className="mt-1 text-xs text-slate-500">In Stock sudah dikurangi pesanan (Ordered). Committed berasal dari PO yang belum diterima.</p>
+        <div className="mt-3 overflow-x-auto">
+          <table className="w-full text-sm">
+            <thead className="text-left text-slate-600">
+              <tr>
+                <th className="p-2">Item</th>
+                <th className="p-2">In Stock</th>
+                <th className="p-2">Ordered</th>
+                <th className="p-2">Committed</th>
+                <th className="p-2">Unit</th>
+              </tr>
+            </thead>
+            <tbody className="text-slate-700">
+              {stockStatusSummary.length === 0 ? (
+                <tr>
+                  <td className="p-2 text-slate-500" colSpan={5}>Belum ada pergerakan stok.</td>
+                </tr>
+              ) : (
+                stockStatusSummary.map((row) => (
+                  <tr key={row.itemName} className="border-t border-slate-200">
+                    <td className="p-2">{row.itemName}</td>
+                    <td className="p-2">{row.inStock}</td>
+                    <td className="p-2">{row.ordered}</td>
+                    <td className="p-2">{row.committed}</td>
+                    <td className="p-2">{row.unit}</td>
+                  </tr>
+                ))
+              )}
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <section className="mb-5 rounded-xl border border-slate-200 bg-white p-4">
+        <h2 className="text-sm font-semibold text-slate-900">Saldo Fisik per Item dan Gudang</h2>
         <div className="mt-3 overflow-x-auto">
           <table className="w-full text-sm">
             <thead className="text-left text-slate-600">

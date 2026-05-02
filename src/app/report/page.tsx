@@ -1,9 +1,27 @@
 "use client";
 
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import { useOfflineStore } from "@/lib/offlineStore";
+import Input from "@/components/ui/input";
+import Select from "@/components/ui/select";
+import type { Journal } from "@/types/journal";
 import type { Payment } from "@/types/payment";
+import type { ChartOfAccount } from "@/types/coa";
 import { formatRupiah } from "@/lib/formatter";
+
+const debitCategories: Journal["category"][] = ["aset", "beban"];
+const creditCategories: Journal["category"][] = ["liabilitas", "modal", "pendapatan"];
+
+const resolveDebitCredit = (entry: Journal) => {
+  const amount = entry.amount || 0;
+  if (entry.type === "cash-in") return { debit: amount, credit: 0 };
+  if (entry.type === "cash-out") return { debit: 0, credit: amount };
+  if (entry.type === "adjustment") {
+    if (debitCategories.includes(entry.category)) return { debit: amount, credit: 0 };
+    if (creditCategories.includes(entry.category)) return { debit: 0, credit: amount };
+  }
+  return { debit: 0, credit: 0 };
+};
 
 export default function ReportPage() {
   const orders = useOfflineStore((state) => state.orders);
@@ -11,20 +29,109 @@ export default function ReportPage() {
   const payments = useOfflineStore((state) => state.payments);
   const goodsReceipts = useOfflineStore((state) => state.goodsReceipts);
   const journals = useOfflineStore((state) => state.journals);
+  const chartOfAccounts = useOfflineStore((state) => state.chartOfAccounts);
+  const [dateFrom, setDateFrom] = useState("");
+  const [dateTo, setDateTo] = useState("");
+  const [accountCode, setAccountCode] = useState("");
+  const [categoryFilter, setCategoryFilter] = useState<Journal["category"] | "">("");
+  const [typeFilter, setTypeFilter] = useState("");
+  const [sourceFilter, setSourceFilter] = useState("");
 
   const getDirection = (payment: Payment) => {
     if (payment.payment_direction) return payment.payment_direction;
     return payment.order_id ? "incoming" : "outgoing";
   };
 
+  const sourceOptions = [
+    { value: "orders", label: "Orders" },
+    { value: "payments", label: "Payments" },
+    { value: "purchases", label: "Purchases" },
+    { value: "goods_receipts", label: "Goods Receipt" },
+    { value: "stocks", label: "Stock" },
+    { value: "manual", label: "Manual" },
+  ];
+
+  const categoryOptions = [
+    { value: "pendapatan", label: "Pendapatan" },
+    { value: "beban", label: "Beban" },
+    { value: "aset", label: "Aset" },
+    { value: "liabilitas", label: "Liabilitas" },
+    { value: "modal", label: "Modal" },
+  ];
+
+  const typeOptions = [
+    { value: "cash-in", label: "Cash In" },
+    { value: "cash-out", label: "Cash Out" },
+    { value: "adjustment", label: "Adjustment" },
+  ];
+
+  const accountOptions = useMemo(
+    () => chartOfAccounts
+      .filter((account) => account.is_active)
+      .map((account) => ({ value: account.code, label: `${account.code} - ${account.name}` })),
+    [chartOfAccounts],
+  );
+
+  const accountByCategory = useMemo(() => {
+    const map = new Map<Journal["category"], ChartOfAccount>();
+    chartOfAccounts.forEach((account) => {
+      map.set(account.category, account);
+    });
+    return map;
+  }, [chartOfAccounts]);
+
+  const isWithinDate = (dateValue: string) => {
+    if (dateFrom && dateValue < dateFrom) return false;
+    if (dateTo && dateValue > dateTo) return false;
+    return true;
+  };
+
+  const filteredOrders = useMemo(
+    () => orders.filter((order) => isWithinDate(order.order_date)),
+    [orders, dateFrom, dateTo],
+  );
+
+  const filteredPurchases = useMemo(
+    () => purchases.filter((purchase) => isWithinDate(purchase.purchase_date)),
+    [purchases, dateFrom, dateTo],
+  );
+
+  const filteredPayments = useMemo(
+    () => payments.filter((payment) => isWithinDate(payment.payment_date)),
+    [payments, dateFrom, dateTo],
+  );
+
+  const filteredGoodsReceipts = useMemo(
+    () => goodsReceipts.filter((receipt) => isWithinDate(receipt.receipt_date)),
+    [goodsReceipts, dateFrom, dateTo],
+  );
+
+  const filteredJournals = useMemo(
+    () => journals.filter((entry) => {
+      if (!isWithinDate(entry.transaction_date)) return false;
+      if (typeFilter && entry.type !== typeFilter) return false;
+      if (categoryFilter && entry.category !== categoryFilter) return false;
+      if (sourceFilter) {
+        const source = entry.ref_table ?? "manual";
+        if (source !== sourceFilter) return false;
+      }
+      if (accountCode) {
+        const account = accountByCategory.get(entry.category);
+        if (!account || account.code !== accountCode) return false;
+      }
+      return true;
+    }),
+    [journals, dateFrom, dateTo, typeFilter, categoryFilter, sourceFilter, accountCode, accountByCategory],
+  );
+
   const paidIncoming = useMemo(
-    () => payments.filter((payment) => getDirection(payment) === "incoming" && payment.is_paid),
-    [payments],
+    () => filteredPayments.filter((payment) => getDirection(payment) === "incoming" && payment.is_paid),
+    [filteredPayments],
   );
 
   const paidOutgoing = useMemo(
-    () => payments.filter((payment) => getDirection(payment) === "outgoing" && payment.is_paid),
-    [payments],
+    () => filteredPayments.filter((payment) => getDirection(payment) === "outgoing" && payment.is_paid),
+    [filteredPayments],
   );
 
   const revenueTotal = useMemo(
@@ -38,8 +145,8 @@ export default function ReportPage() {
   );
 
   const procurementTotal = useMemo(
-    () => purchases.reduce((sum, purchase) => sum + purchase.total_price, 0),
-    [purchases],
+    () => filteredPurchases.reduce((sum, purchase) => sum + purchase.total_price, 0),
+    [filteredPurchases],
   );
 
   const netCashflow = useMemo(
@@ -49,29 +156,60 @@ export default function ReportPage() {
 
   const orderSummary = useMemo(
     () => ({
-      pending: orders.filter((order) => order.order_status === "pending").length,
-      paid: orders.filter((order) => order.order_status === "paid").length,
-      delivered: orders.filter((order) => order.order_status === "delivered").length,
-      cancelled: orders.filter((order) => order.order_status === "cancelled").length,
+      pending: filteredOrders.filter((order) => order.order_status === "pending").length,
+      paid: filteredOrders.filter((order) => order.order_status === "paid").length,
+      delivered: filteredOrders.filter((order) => order.order_status === "delivered").length,
+      cancelled: filteredOrders.filter((order) => order.order_status === "cancelled").length,
     }),
-    [orders],
+    [filteredOrders],
   );
 
   const purchaseSummary = useMemo(
     () => ({
-      pending: purchases.filter((purchase) => purchase.payment_status === "pending").length,
-      paid: purchases.filter((purchase) => purchase.payment_status === "paid").length,
-      partial: purchases.filter((purchase) => purchase.payment_status === "partial").length,
+      pending: filteredPurchases.filter((purchase) => purchase.payment_status === "pending").length,
+      paid: filteredPurchases.filter((purchase) => purchase.payment_status === "paid").length,
+      partial: filteredPurchases.filter((purchase) => purchase.payment_status === "partial").length,
     }),
-    [purchases],
+    [filteredPurchases],
   );
 
   const latestJournals = useMemo(
-    () => [...journals]
+    () => [...filteredJournals]
       .sort((a, b) => b.created_at.localeCompare(a.created_at))
       .slice(0, 8),
-    [journals],
+    [filteredJournals],
   );
+
+  const journalTotals = useMemo(
+    () => filteredJournals.reduce(
+      (acc, entry) => {
+        const { debit, credit } = resolveDebitCredit(entry);
+        acc.debit += debit;
+        acc.credit += credit;
+        return acc;
+      },
+      { debit: 0, credit: 0 },
+    ),
+    [filteredJournals],
+  );
+
+  const journalBalance = journalTotals.debit - journalTotals.credit;
+
+  const journalCategorySummary = useMemo(() => {
+    const summaryMap = new Map<string, { debit: number; credit: number; count: number }>();
+    filteredJournals.forEach((entry) => {
+      const { debit, credit } = resolveDebitCredit(entry);
+      const existing = summaryMap.get(entry.category) || { debit: 0, credit: 0, count: 0 };
+      existing.debit += debit;
+      existing.credit += credit;
+      existing.count += 1;
+      summaryMap.set(entry.category, existing);
+    });
+
+    return Array.from(summaryMap.entries())
+      .map(([category, value]) => ({ category, ...value }))
+      .sort((a, b) => a.category.localeCompare(b.category));
+  }, [filteredJournals]);
 
   const summaries = [
     { label: "Revenue Paid", value: formatRupiah(revenueTotal) },
@@ -85,6 +223,24 @@ export default function ReportPage() {
       <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
         <h1 className="text-xl font-semibold text-slate-900">Reporting Center</h1>
         <p className="mt-1 text-sm text-slate-600">Ringkasan performa sales, procurement, cash in and out, dan operasional farm.</p>
+      </section>
+
+      <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <div>
+            <h2 className="text-base font-semibold text-slate-900">Filter Report</h2>
+            <p className="mt-1 text-sm text-slate-600">Filter ringkasan berdasarkan periode dan akun.</p>
+          </div>
+        </div>
+
+        <div className="mt-4 grid gap-3 md:grid-cols-2 xl:grid-cols-6">
+          <Input type="date" value={dateFrom} onChange={(e) => setDateFrom(e.target.value)} className="w-full" />
+          <Input type="date" value={dateTo} onChange={(e) => setDateTo(e.target.value)} className="w-full" />
+          <Select options={accountOptions} value={accountCode} onChange={(e) => setAccountCode(e.target.value)} className="w-full" />
+          <Select options={typeOptions} value={typeFilter} onChange={(e) => setTypeFilter(e.target.value)} className="w-full" />
+          <Select options={categoryOptions} value={categoryFilter} onChange={(e) => setCategoryFilter(e.target.value as Journal["category"] | "")} className="w-full" />
+          <Select options={sourceOptions} value={sourceFilter} onChange={(e) => setSourceFilter(e.target.value)} className="w-full" />
+        </div>
       </section>
 
       <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
@@ -113,18 +269,74 @@ export default function ReportPage() {
             <p>Pending: {purchaseSummary.pending}</p>
             <p>Paid: {purchaseSummary.paid}</p>
             <p>Partial: {purchaseSummary.partial}</p>
-            <p>Total PO: {purchases.length}</p>
+            <p>Total PO: {filteredPurchases.length}</p>
           </div>
         </article>
 
         <article className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
           <h2 className="text-base font-semibold text-slate-900">Goods Receipt</h2>
           <div className="mt-3 space-y-1 text-sm text-slate-600">
-            <p>Total GRN: {goodsReceipts.length}</p>
+            <p>Total GRN: {filteredGoodsReceipts.length}</p>
             <p>Payment Incoming: {paidIncoming.length}</p>
             <p>Payment Outgoing: {paidOutgoing.length}</p>
           </div>
         </article>
+      </section>
+
+      <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+        <article className="rounded-2xl border border-emerald-200 bg-emerald-50 p-5 shadow-sm">
+          <h2 className="text-base font-semibold text-emerald-900">Total Debit</h2>
+          <p className="mt-2 text-2xl font-semibold text-emerald-900">{formatRupiah(journalTotals.debit)}</p>
+          <p className="mt-1 text-xs text-emerald-700">Berdasarkan jurnal transaksi</p>
+        </article>
+        <article className="rounded-2xl border border-rose-200 bg-rose-50 p-5 shadow-sm">
+          <h2 className="text-base font-semibold text-rose-900">Total Kredit</h2>
+          <p className="mt-2 text-2xl font-semibold text-rose-900">{formatRupiah(journalTotals.credit)}</p>
+          <p className="mt-1 text-xs text-rose-700">Berdasarkan jurnal transaksi</p>
+        </article>
+        <article className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+          <h2 className="text-base font-semibold text-slate-900">Saldo Jurnal</h2>
+          <p className="mt-2 text-2xl font-semibold text-slate-900">{formatRupiah(journalBalance)}</p>
+          <p className="mt-1 text-xs text-slate-500">Debit - Kredit</p>
+        </article>
+      </section>
+
+      <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+        <h2 className="text-base font-semibold text-slate-900">Rekap Akun (Debit/Kredit)</h2>
+        <p className="mt-1 text-sm text-slate-600">Ringkasan jurnal per kategori akun untuk analisis akuntansi.</p>
+        <div className="mt-4 overflow-x-auto">
+          <table className="w-full text-sm">
+            <thead className="border-y border-slate-200 bg-slate-50 text-left text-slate-600">
+              <tr>
+                <th className="p-3">Akun</th>
+                <th className="p-3">Debit</th>
+                <th className="p-3">Kredit</th>
+                <th className="p-3">Entry</th>
+              </tr>
+            </thead>
+            <tbody className="text-slate-700">
+              {journalCategorySummary.length === 0 ? (
+                <tr>
+                  <td className="p-3 text-slate-500" colSpan={4}>Belum ada jurnal tercatat.</td>
+                </tr>
+              ) : (
+                journalCategorySummary.map((row) => {
+                  const account = accountByCategory.get(row.category as Journal["category"]);
+                  const accountLabel = account ? `${account.code} - ${account.name}` : row.category;
+
+                  return (
+                    <tr key={row.category} className="border-b border-slate-100">
+                      <td className="p-3">{accountLabel}</td>
+                      <td className="p-3">{row.debit ? formatRupiah(row.debit) : "-"}</td>
+                      <td className="p-3">{row.credit ? formatRupiah(row.credit) : "-"}</td>
+                      <td className="p-3">{row.count}</td>
+                    </tr>
+                  );
+                })
+              )}
+            </tbody>
+          </table>
+        </div>
       </section>
 
       <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
@@ -136,9 +348,9 @@ export default function ReportPage() {
               <tr>
                 <th className="p-3">Tanggal</th>
                 <th className="p-3">Deskripsi</th>
-                <th className="p-3">Jenis</th>
-                <th className="p-3">Kategori</th>
-                <th className="p-3">Nominal</th>
+                <th className="p-3">Akun</th>
+                <th className="p-3">Debit</th>
+                <th className="p-3">Kredit</th>
               </tr>
             </thead>
             <tbody className="text-slate-700">
@@ -147,15 +359,21 @@ export default function ReportPage() {
                   <td className="p-3 text-slate-500" colSpan={5}>Belum ada jurnal tercatat.</td>
                 </tr>
               ) : (
-                latestJournals.map((journal) => (
-                  <tr key={journal.id} className="border-b border-slate-100">
-                    <td className="p-3">{journal.transaction_date}</td>
-                    <td className="p-3">{journal.description}</td>
-                    <td className="p-3 capitalize">{journal.type}</td>
-                    <td className="p-3 capitalize">{journal.category}</td>
-                    <td className="p-3">{formatRupiah(journal.amount)}</td>
-                  </tr>
-                ))
+                latestJournals.map((journal) => {
+                  const { debit, credit } = resolveDebitCredit(journal);
+                  const account = accountByCategory.get(journal.category);
+                  const accountLabel = account ? `${account.code} - ${account.name}` : journal.category;
+
+                  return (
+                    <tr key={journal.id} className="border-b border-slate-100">
+                      <td className="p-3">{journal.transaction_date}</td>
+                      <td className="p-3">{journal.description}</td>
+                      <td className="p-3">{accountLabel}</td>
+                      <td className="p-3">{debit ? formatRupiah(debit) : "-"}</td>
+                      <td className="p-3">{credit ? formatRupiah(credit) : "-"}</td>
+                    </tr>
+                  );
+                })
               )}
             </tbody>
           </table>

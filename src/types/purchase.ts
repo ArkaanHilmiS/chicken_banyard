@@ -2,6 +2,7 @@ export interface Purchase {
   id: string
   purchase_date: string
   vendor_name: string
+  item_id: string
   item_name: string
   quantity: number
   unit: string

@@ -14,6 +14,7 @@ const menuItems = [
   { href: "/price-master", label: "Price Master" },
   { href: "/uom-master", label: "UoM Master" },
   { href: "/payment", label: "Payment" },
+  { href: "/delivery-order", label: "Delivery Order" },
   { href: "/stock", label: "Inventory" },
   { href: "/price", label: "Pricing" },
   { href: "/journal", label: "Journal" },

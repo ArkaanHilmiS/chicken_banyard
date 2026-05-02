@@ -83,13 +83,14 @@ export default function ProcurementPage() {
 
   const handleAddPurchase = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!vendorName || !itemName || !quantity || !unit || !unitPrice || !category) {
+    if (!vendorName || !itemId || !itemName || !quantity || !unit || !unitPrice || !category) {
       setMsg("Semua field wajib diisi.");
       return;
     }
 
     addPurchase({
       vendorName,
+      itemId,
       itemName,
       quantity: Number(quantity),
       unit,

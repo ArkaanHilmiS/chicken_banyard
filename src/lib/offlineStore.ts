@@ -11,6 +11,7 @@ import type { Purchase } from "@/types/purchase";
 import type { Stock } from "@/types/stock";
 import type { UnitOfMeasure } from "@/types/unitOfMeasure";
 import type { User } from "@/types/user";
+import type { Warehouse } from "@/types/warehouse";
 
 type AuthUser = User & { password: string };
 
@@ -31,14 +32,25 @@ interface OfflineStoreState {
   itemMasters: ItemMaster[];
   priceMasters: PriceMaster[];
   unitOfMeasures: UnitOfMeasure[];
+  warehouses: Warehouse[];
   users: AuthUser[];
   currentUserId?: string;
-  addOrder: (input: { quantityKg: number; serviceMethod: "antar" | "ambil"; address: string }) => void;
-  addPurchase: (input: { vendorName: string; itemName: string; quantity: number; unit: string; unitPrice: number; category: Purchase["category"] }) => void;
-  addGoodsReceipt: (input: { vendorName: string; itemName: string; quantityReceived: number; unit: string; condition: GoodsReceipt["condition"] }) => void;
-  addPayment: (input: { direction: "incoming" | "outgoing"; amount: number; paymentFor: NonNullable<Payment["payment_for"]>; vendorName?: string; method: Payment["payment_method"] }) => void;
+  addOrder: (input: {
+    itemId: string;
+    quantity: number;
+    serviceMethod: "antar" | "ambil";
+    address: string;
+    paymentMethod: Order["payment_method"];
+    deliveryDate: string;
+    deliveryTime: string;
+  }) => void;
+  updateOrderStatus: (orderId: string, status: Order["order_status"]) => void;
+  addPurchase: (input: { vendorName: string; itemId: string; itemName: string; quantity: number; unit: string; unitPrice: number; category: Purchase["category"] }) => void;
+  addGoodsReceipt: (input: { purchaseId?: string; vendorName: string; itemId: string; itemName: string; quantityReceived: number; unit: string; warehouseId: string; condition: GoodsReceipt["condition"] }) => void;
+  addPayment: (input: { direction: "incoming" | "outgoing"; amount: number; paymentFor: NonNullable<Payment["payment_for"]>; vendorName?: string; method: Payment["payment_method"]; referenceId?: string }) => void;
   addJournal: (input: { description: string; amount: number; category: Journal["category"]; type: string }) => void;
-  addStock: (input: { quantityKg: number; stockType: Stock["stock_type"]; orderId?: string }) => void;
+  addStock: (input: { itemId: string; quantity: number; warehouseId: string; stockType: Stock["stock_type"]; orderId?: string }) => void;
+  addWarehouse: (input: { name: string; code: string; location?: string }) => void;
   addPrice: (pricePerKg: number) => void;
   addItemMaster: (input: {
     sku: string;
@@ -80,6 +92,21 @@ interface OfflineStoreState {
   updateCurrentProfile: (input: { username: string; whatsappNumber: string; capitalAddress: string }) => { ok: boolean; message: string };
 }
 
+const toJournalType = (direction: "incoming" | "outgoing") => (direction === "incoming" ? "cash-in" : "cash-out");
+
+const toJournalCategory = (direction: "incoming" | "outgoing") => (direction === "incoming" ? "pendapatan" : "beban");
+
+const toExpenseCategoryFromPaymentFor = (
+  paymentFor: NonNullable<Payment["payment_for"]>,
+): Payment["expense_category"] => {
+  if (paymentFor === "electricity" || paymentFor === "water") return "utility";
+  if (paymentFor === "chicken_feed") return "feed";
+  if (paymentFor === "new_chicken") return "livestock";
+  if (paymentFor === "asset") return "asset";
+  if (paymentFor === "operational") return "operational";
+  return "other";
+};
+
 const seedPrices: Price[] = [
   { id: "PR-001", price_date: today(), price_per_kg: 31000, created_at: nowIso() },
   { id: "PR-000", price_date: "2026-03-29", price_per_kg: 30500, created_at: nowIso() },
@@ -104,7 +131,10 @@ const seedOrders: Order[] = [
     id: "SO-240301",
     user_id: "USR-001",
     order_date: today(),
-    quantity_kg: 120,
+    item_id: "ITM-001",
+    item_name: "Telur Layer Grade A",
+    quantity: 120,
+    unit: "kg",
     delivery_date: today(),
     delivery_time: "08:00",
     service_method: "antar",
@@ -112,7 +142,7 @@ const seedOrders: Order[] = [
     payment_method: "cash",
     payment_status: "pending",
     receipt_confirmed: false,
-    price_per_kg_at_order: 31000,
+    unit_price_at_order: 31000,
     total_price: 3720000,
     order_status: "pending",
     payment_id: "",
@@ -175,7 +205,18 @@ const seedJournals: Journal[] = [
 ];
 
 const seedStocks: Stock[] = [
-  { id: "STK-001", stock_date: today(), quantity_kg: 1420, stock_type: "incoming", created_at: nowIso() },
+  {
+    id: "STK-001",
+    stock_date: today(),
+    item_id: "ITM-001",
+    item_name: "Telur Layer Grade A",
+    unit: "kg",
+    quantity: 1420,
+    warehouse_id: "WH-001",
+    warehouse_name: "Gudang Telur",
+    stock_type: "incoming",
+    created_at: nowIso(),
+  },
 ];
 
 const seedPurchases: Purchase[] = [
@@ -183,6 +224,7 @@ const seedPurchases: Purchase[] = [
     id: "PO-001",
     purchase_date: today(),
     vendor_name: "CV Pakan Jaya",
+    item_id: "ITM-002",
     item_name: "Pakan Layer",
     quantity: 25,
     unit: "sak",
@@ -201,10 +243,12 @@ const seedGoodsReceipts: GoodsReceipt[] = [
     receipt_date: today(),
     purchase_id: "PO-001",
     vendor_name: "CV Pakan Jaya",
+    item_id: "ITM-002",
     item_name: "Pakan Layer",
     quantity_received: 25,
     unit: "sak",
     condition: "good",
+    warehouse_id: "WH-002",
     warehouse_location: "Gudang A",
     received_by: "Admin Farm",
     created_at: nowIso(),
@@ -244,6 +288,7 @@ const seedUnitOfMeasures: UnitOfMeasure[] = [
   { id: "UOM-001", name: "Kilogram", symbol: "kg", is_active: true, created_at: nowIso() },
   { id: "UOM-002", name: "Sak", symbol: "sak", is_active: true, created_at: nowIso() },
   { id: "UOM-003", name: "Paket", symbol: "paket", is_active: true, created_at: nowIso() },
+  { id: "UOM-004", name: "Liter", symbol: "liter", is_active: true, created_at: nowIso() },
 ];
 
 const seedItemMasters: ItemMaster[] = [
@@ -273,6 +318,25 @@ const seedItemMasters: ItemMaster[] = [
     is_active: true,
     created_at: nowIso(),
   },
+  {
+    id: "ITM-003",
+    sku: "AIR-MINUM-001",
+    name: "Air Minum Ternak",
+    category: "Utility",
+    default_uom: "liter",
+    purchase_price: 500,
+    selling_price: 0,
+    min_stock: 500,
+    description: "Kebutuhan air bersih ternak",
+    is_active: true,
+    created_at: nowIso(),
+  },
+];
+
+const seedWarehouses: Warehouse[] = [
+  { id: "WH-001", name: "Gudang Telur", code: "GDT", location: "Zona Produksi", is_active: true, created_at: nowIso() },
+  { id: "WH-002", name: "Gudang Pakan", code: "GDP", location: "Zona Bahan Baku", is_active: true, created_at: nowIso() },
+  { id: "WH-003", name: "Tangki Air", code: "TGA", location: "Zona Utilitas", is_active: true, created_at: nowIso() },
 ];
 
 const seedPriceMasters: PriceMaster[] = [
@@ -314,25 +378,33 @@ export const useOfflineStore = create<OfflineStoreState>((set, get) => ({
   itemMasters: seedItemMasters,
   priceMasters: seedPriceMasters,
   unitOfMeasures: seedUnitOfMeasures,
+  warehouses: seedWarehouses,
   users: seedUsers,
   currentUserId: "USR-001",
 
-  addOrder: ({ quantityKg, serviceMethod, address }) => {
-    const latestPrice = get().prices[0]?.price_per_kg ?? 30000;
+  addOrder: ({ itemId, quantity, serviceMethod, address, paymentMethod, deliveryDate, deliveryTime }) => {
+    const selectedItem = get().itemMasters.find((item) => item.id === itemId);
+    if (!selectedItem) return;
+    const sellingPriceFromMaster = get().priceMasters.find((price) => price.item_id === itemId && price.price_type === "selling")?.price_value;
+    const unitPrice = sellingPriceFromMaster ?? selectedItem.selling_price;
+
     const newOrder: Order = {
       id: makeId("SO"),
       user_id: get().currentUserId ?? "USR-001",
       order_date: today(),
-      quantity_kg: quantityKg,
-      delivery_date: today(),
-      delivery_time: "09:00",
+      item_id: itemId,
+      item_name: selectedItem.name,
+      quantity,
+      unit: selectedItem.default_uom,
+      delivery_date: deliveryDate,
+      delivery_time: deliveryTime,
       service_method: serviceMethod,
       address,
-      payment_method: "cash",
+      payment_method: paymentMethod,
       payment_status: "pending",
       receipt_confirmed: false,
-      price_per_kg_at_order: latestPrice,
-      total_price: quantityKg * latestPrice,
+      unit_price_at_order: unitPrice,
+      total_price: quantity * unitPrice,
       order_status: "pending",
       payment_id: "",
       created_at: nowIso(),
@@ -342,7 +414,7 @@ export const useOfflineStore = create<OfflineStoreState>((set, get) => ({
       id: makeId("PMT"),
       order_id: newOrder.id,
       payment_date: today(),
-      payment_method: "cash",
+      payment_method: paymentMethod,
       payment_direction: "incoming",
       payment_for: "sales",
       is_paid: false,
@@ -370,12 +442,35 @@ export const useOfflineStore = create<OfflineStoreState>((set, get) => ({
     }));
   },
 
-  addPurchase: ({ vendorName, itemName, quantity, unit, unitPrice, category }) => {
+  updateOrderStatus: (orderId, status) => {
+    set((state) => ({
+      orders: state.orders.map((order) => {
+        if (order.id !== orderId) return order;
+
+        const paymentStatus = status === "paid"
+          ? "paid"
+          : status === "cancelled"
+            ? "cancelled"
+            : order.payment_status;
+
+        return {
+          ...order,
+          order_status: status,
+          payment_status: paymentStatus,
+          receipt_confirmed: status === "delivered" ? true : order.receipt_confirmed,
+        };
+      }),
+    }));
+  },
+
+  addPurchase: ({ vendorName, itemId, itemName, quantity, unit, unitPrice, category }) => {
+    const activeUserId = get().currentUserId ?? "USR-001";
     const total = quantity * unitPrice;
     const newPurchase: Purchase = {
       id: makeId("PO"),
       purchase_date: today(),
       vendor_name: vendorName,
+      item_id: itemId,
       item_name: itemName,
       quantity,
       unit,
@@ -386,48 +481,105 @@ export const useOfflineStore = create<OfflineStoreState>((set, get) => ({
       created_at: nowIso(),
     };
 
-    set((state) => ({ purchases: [newPurchase, ...state.purchases] }));
+    const newJournal: Journal = {
+      id: makeId("JRN"),
+      transaction_date: today(),
+      description: `PO ${newPurchase.id} - ${itemName} (${quantity} ${unit})`,
+      type: "adjustment",
+      amount: total,
+      category: "liabilitas",
+      ref_table: "purchases",
+      ref_id: newPurchase.id,
+      user_id: activeUserId,
+      created_at: nowIso(),
+    };
+
+    set((state) => ({
+      purchases: [newPurchase, ...state.purchases],
+      journals: [newJournal, ...state.journals],
+    }));
   },
 
-  addGoodsReceipt: ({ vendorName, itemName, quantityReceived, unit, condition }) => {
+  addGoodsReceipt: ({ purchaseId, vendorName, itemId, itemName, quantityReceived, unit, warehouseId, condition }) => {
+    const activeUserId = get().currentUserId ?? "USR-001";
+    const selectedWarehouse = get().warehouses.find((warehouse) => warehouse.id === warehouseId);
     const newReceipt: GoodsReceipt = {
       id: makeId("GR"),
       receipt_date: today(),
+      purchase_id: purchaseId,
       vendor_name: vendorName,
+      item_id: itemId,
       item_name: itemName,
       quantity_received: quantityReceived,
       unit,
       condition,
-      warehouse_location: "Gudang A",
+      warehouse_id: warehouseId,
+      warehouse_location: selectedWarehouse?.name || "Gudang Utama",
       received_by: "Admin Farm",
+      created_at: nowIso(),
+    };
+
+    const stockFromReceipt: Stock = {
+      id: makeId("STK"),
+      stock_date: today(),
+      item_id: itemId,
+      item_name: itemName,
+      unit,
+      quantity: quantityReceived,
+      warehouse_id: warehouseId,
+      warehouse_name: selectedWarehouse?.name || "Gudang Utama",
+      stock_type: "incoming",
+      created_at: nowIso(),
+    };
+
+    const journalFromReceipt: Journal = {
+      id: makeId("JRN"),
+      transaction_date: today(),
+      description: `Barang diterima ${itemName} (${quantityReceived} ${unit})`,
+      type: "adjustment",
+      amount: 0,
+      category: "aset",
+      ref_table: "goods_receipts",
+      ref_id: newReceipt.id,
+      user_id: activeUserId,
       created_at: nowIso(),
     };
 
     set((state) => ({
       goodsReceipts: [newReceipt, ...state.goodsReceipts],
-      stocks: [
-        {
-          id: makeId("STK"),
-          stock_date: today(),
-          quantity_kg: quantityReceived,
-          stock_type: "incoming",
-          created_at: nowIso(),
-        },
-        ...state.stocks,
-      ],
+      stocks: [stockFromReceipt, ...state.stocks],
+      journals: [journalFromReceipt, ...state.journals],
+      purchases: state.purchases.map((purchase) => {
+        if (!purchaseId || purchase.id !== purchaseId) return purchase;
+        return {
+          ...purchase,
+          notes: purchase.notes
+            ? `${purchase.notes} | GR: ${newReceipt.id}`
+            : `GR: ${newReceipt.id}`,
+        };
+      }),
     }));
   },
 
-  addPayment: ({ direction, amount, paymentFor, vendorName, method }) => {
+  addPayment: ({ direction, amount, paymentFor, vendorName, method, referenceId }) => {
+    const activeUserId = get().currentUserId ?? "USR-001";
+    const isIncoming = direction === "incoming";
+    const referenceType: Payment["reference_type"] = referenceId
+      ? (isIncoming ? "order" : "purchase")
+      : "manual";
+
     const newPayment: Payment = {
       id: makeId("PMT"),
-      order_id: direction === "incoming" ? makeId("SO") : "",
+      order_id: isIncoming ? referenceId || "" : "",
+      purchase_id: !isIncoming ? referenceId || "" : undefined,
       payment_date: today(),
       payment_method: method,
       payment_direction: direction,
       payment_for: paymentFor,
-      expense_category: direction === "outgoing" ? "operational" : undefined,
+      expense_category: !isIncoming ? toExpenseCategoryFromPaymentFor(paymentFor) : undefined,
       vendor_name: vendorName,
+      reference_type: referenceType,
+      reference_id: referenceId,
       is_paid: true,
       amount,
       created_at: nowIso(),
@@ -436,19 +588,65 @@ export const useOfflineStore = create<OfflineStoreState>((set, get) => ({
     const newJournal: Journal = {
       id: makeId("JRN"),
       transaction_date: today(),
-      description: direction === "incoming" ? "Penerimaan pembayaran" : `Pembayaran ${paymentFor}`,
-      type: direction === "incoming" ? "cash-in" : "cash-out",
+      description: isIncoming
+        ? `Penerimaan pembayaran ${referenceId ? `untuk SO ${referenceId}` : "manual"}`
+        : `Pembayaran ${paymentFor}${referenceId ? ` untuk PO ${referenceId}` : ""}`,
+      type: toJournalType(direction),
       amount,
-      category: direction === "incoming" ? "pendapatan" : "beban",
+      category: toJournalCategory(direction),
       ref_table: "payments",
       ref_id: newPayment.id,
-      user_id: get().currentUserId ?? "USR-001",
+      user_id: activeUserId,
       created_at: nowIso(),
     };
+
+    const stockFromSales: Stock | null = (() => {
+      if (!isIncoming || !referenceId) return null;
+      const order = get().orders.find((row) => row.id === referenceId);
+      if (!order) return null;
+
+      const latestStockForItem = get().stocks.find((row) => row.item_id === order.item_id);
+      const selectedWarehouse = latestStockForItem
+        ? { id: latestStockForItem.warehouse_id, name: latestStockForItem.warehouse_name }
+        : { id: "WH-001", name: "Gudang Telur" };
+
+      return {
+        id: makeId("STK"),
+        stock_date: today(),
+        item_id: order.item_id,
+        item_name: order.item_name,
+        unit: order.unit,
+        quantity: order.quantity,
+        warehouse_id: selectedWarehouse.id,
+        warehouse_name: selectedWarehouse.name,
+        stock_type: "outgoing",
+        order_id: order.id,
+        created_at: nowIso(),
+      };
+    })();
 
     set((state) => ({
       payments: [newPayment, ...state.payments],
       journals: [newJournal, ...state.journals],
+      stocks: stockFromSales ? [stockFromSales, ...state.stocks] : state.stocks,
+      orders: state.orders.map((order) => {
+        if (!isIncoming || !referenceId || order.id !== referenceId) return order;
+        return {
+          ...order,
+          payment_status: "paid",
+          order_status: "paid",
+          payment_method: method,
+          payment_id: newPayment.id,
+          receipt_confirmed: true,
+        };
+      }),
+      purchases: state.purchases.map((purchase) => {
+        if (isIncoming || !referenceId || purchase.id !== referenceId) return purchase;
+        return {
+          ...purchase,
+          payment_status: "paid",
+        };
+      }),
       masterParties: state.masterParties.map((party) => {
         if (!vendorName) return party;
         if (party.name.toLowerCase() !== vendorName.toLowerCase()) return party;
@@ -458,7 +656,7 @@ export const useOfflineStore = create<OfflineStoreState>((set, get) => ({
           total_transaction_rp: party.total_transaction_rp + amount,
           transaction_count: party.transaction_count + 1,
           preferred_payment_method: method,
-          preferred_transaction_method: direction === "incoming" ? "cash-in" : "cash-out",
+          preferred_transaction_method: isIncoming ? "cash-in" : "cash-out",
         };
       }),
     }));
@@ -479,17 +677,42 @@ export const useOfflineStore = create<OfflineStoreState>((set, get) => ({
     set((state) => ({ journals: [newJournal, ...state.journals] }));
   },
 
-  addStock: ({ quantityKg, stockType, orderId }) => {
+  addStock: ({ itemId, quantity, warehouseId, stockType, orderId }) => {
+    const selectedItem = get().itemMasters.find((item) => item.id === itemId);
+    const selectedWarehouse = get().warehouses.find((warehouse) => warehouse.id === warehouseId);
+    if (!selectedItem || !selectedWarehouse) return;
+
     const newStock: Stock = {
       id: makeId("STK"),
       stock_date: today(),
-      quantity_kg: quantityKg,
+      item_id: itemId,
+      item_name: selectedItem.name,
+      unit: selectedItem.default_uom,
+      quantity,
+      warehouse_id: warehouseId,
+      warehouse_name: selectedWarehouse.name,
       stock_type: stockType,
       order_id: orderId,
       created_at: nowIso(),
     };
 
-    set((state) => ({ stocks: [newStock, ...state.stocks] }));
+    const newJournal: Journal = {
+      id: makeId("JRN"),
+      transaction_date: today(),
+      description: `Stok ${stockType} ${selectedItem.name} (${quantity} ${selectedItem.default_uom})`,
+      type: "adjustment",
+      amount: 0,
+      category: "aset",
+      ref_table: "stocks",
+      ref_id: newStock.id,
+      user_id: get().currentUserId ?? "USR-001",
+      created_at: nowIso(),
+    };
+
+    set((state) => ({
+      stocks: [newStock, ...state.stocks],
+      journals: [newJournal, ...state.journals],
+    }));
   },
 
   addPrice: (pricePerKg) => {
@@ -532,6 +755,19 @@ export const useOfflineStore = create<OfflineStoreState>((set, get) => ({
     };
 
     set((state) => ({ unitOfMeasures: [newUom, ...state.unitOfMeasures] }));
+  },
+
+  addWarehouse: ({ name, code, location }) => {
+    const newWarehouse: Warehouse = {
+      id: makeId("WH"),
+      name,
+      code,
+      location,
+      is_active: true,
+      created_at: nowIso(),
+    };
+
+    set((state) => ({ warehouses: [newWarehouse, ...state.warehouses] }));
   },
 
   addPriceMaster: ({ itemId, itemName, uom, priceType, priceValue, effectiveDate, paymentMethod, transactionMethod }) => {

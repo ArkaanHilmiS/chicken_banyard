@@ -8,9 +8,12 @@ import { useOfflineStore } from "@/lib/offlineStore";
 
 export default function PaymentPage() {
   const payments = useOfflineStore((state) => state.payments);
+  const orders = useOfflineStore((state) => state.orders);
+  const purchases = useOfflineStore((state) => state.purchases);
   const parties = useOfflineStore((state) => state.masterParties);
   const addPayment = useOfflineStore((state) => state.addPayment);
   const [direction, setDirection] = useState<"incoming" | "outgoing" | "">("");
+  const [referenceId, setReferenceId] = useState("");
   const [paymentFor, setPaymentFor] = useState<NonNullable<Payment["payment_for"]> | "">("");
   const [vendorName, setVendorName] = useState("");
   const [partyId, setPartyId] = useState("");
@@ -62,12 +65,76 @@ export default function PaymentPage() {
 
   const onDirectionChange = (value: "incoming" | "outgoing" | "") => {
     setDirection(value);
+    setReferenceId("");
     setPartyId("");
     setVendorName("");
     setMethod("");
+    setAmount("");
 
     if (value === "incoming") {
       setPaymentFor((prev) => (prev ? prev : "sales"));
+    }
+  };
+
+  const referenceOptions = useMemo(() => {
+    if (!direction) return [];
+
+    if (direction === "incoming") {
+      return orders
+        .filter((order) => order.payment_status !== "paid")
+        .map((order) => ({
+          value: order.id,
+          label: `${order.id} - ${order.address} - Rp ${order.total_price.toLocaleString("id-ID")}`,
+        }));
+    }
+
+    return purchases
+      .filter((purchase) => purchase.payment_status !== "paid")
+      .map((purchase) => ({
+        value: purchase.id,
+        label: `${purchase.id} - ${purchase.vendor_name} - Rp ${purchase.total_price.toLocaleString("id-ID")}`,
+      }));
+  }, [direction, orders, purchases]);
+
+  const onReferenceChange = (value: string) => {
+    setReferenceId(value);
+
+    if (!direction || !value) return;
+
+    if (direction === "incoming") {
+      const selectedOrder = orders.find((order) => order.id === value);
+      if (!selectedOrder) return;
+
+      setAmount(String(selectedOrder.total_price));
+      setPaymentFor("sales");
+      const customer = parties.find((party) => party.name.toLowerCase() === selectedOrder.address.toLowerCase());
+      if (customer) {
+        setPartyId(customer.id);
+        setVendorName(customer.name);
+        if (customer.preferred_payment_method) setMethod(customer.preferred_payment_method);
+      }
+      return;
+    }
+
+    const selectedPurchase = purchases.find((purchase) => purchase.id === value);
+    if (!selectedPurchase) return;
+
+    setAmount(String(selectedPurchase.total_price));
+    const outgoingPaymentFor: NonNullable<Payment["payment_for"]> = (() => {
+      if (selectedPurchase.category === "utility") return "electricity";
+      if (selectedPurchase.category === "feed") return "chicken_feed";
+      if (selectedPurchase.category === "livestock") return "new_chicken";
+      if (selectedPurchase.category === "asset") return "asset";
+      if (selectedPurchase.category === "operational") return "operational";
+      return "other";
+    })();
+    setPaymentFor(outgoingPaymentFor);
+
+    const supplier = parties.find((party) => party.name.toLowerCase() === selectedPurchase.vendor_name.toLowerCase());
+    if (supplier) {
+      setPartyId(supplier.id);
+      setVendorName(supplier.name);
+      if (supplier.preferred_payment_method) setMethod(supplier.preferred_payment_method);
     }
   };
 
@@ -95,10 +162,12 @@ export default function PaymentPage() {
       paymentFor,
       vendorName,
       method,
+      referenceId: referenceId || undefined,
     });
 
     setMsg("Payment berhasil ditambahkan.");
     setDirection("");
+    setReferenceId("");
     setPaymentFor("");
     setVendorName("");
     setMethod("");
@@ -111,11 +180,12 @@ export default function PaymentPage() {
         <form onSubmit={handleAddPayment} className="space-y-4">
           <div>
             <h1 className="text-xl font-semibold text-slate-900">Cash In and Cash Out</h1>
-            <p className="mt-1 text-sm text-slate-600">Data payment berjalan di memory offline sementara (tanpa database/storage).</p>
+            <p className="mt-1 text-sm text-slate-600">Payment terintegrasi dengan Sales Order dan Purchase Order, termasuk auto posting ke jurnal.</p>
           </div>
 
           <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
             <Select options={directionOptions} value={direction} onChange={(e) => onDirectionChange(e.target.value as "incoming" | "outgoing" | "")} required className="w-full" />
+            <Select options={referenceOptions} value={referenceId} onChange={(e) => onReferenceChange(e.target.value)} className="w-full" />
             <Select options={paymentForOptions} value={paymentFor} onChange={(e) => setPaymentFor(e.target.value as NonNullable<Payment["payment_for"]> | "")} required className="w-full" />
             <Select options={partyOptions} value={partyId} onChange={(e) => onPartyChange(e.target.value)} className="w-full" />
             <Select options={methodOptions} value={method} onChange={(e) => setMethod(e.target.value as Payment["payment_method"] | "")} required className="w-full" />
@@ -147,6 +217,7 @@ export default function PaymentPage() {
               <tr>
                 <th className="p-3">Tanggal</th>
                 <th className="p-3">Arah</th>
+                <th className="p-3">Referensi</th>
                 <th className="p-3">Untuk</th>
                 <th className="p-3">Vendor/Pelanggan</th>
                 <th className="p-3">Metode</th>
@@ -166,6 +237,7 @@ export default function PaymentPage() {
                         {direction}
                       </span>
                     </td>
+                    <td className="p-3">{p.reference_id || p.order_id || p.purchase_id || "-"}</td>
                     <td className="p-3 capitalize">{p.payment_for || (p.order_id ? "sales" : "operational")}</td>
                     <td className="p-3">{p.vendor_name || "-"}</td>
                     <td className="p-3 uppercase">{p.payment_method}</td>

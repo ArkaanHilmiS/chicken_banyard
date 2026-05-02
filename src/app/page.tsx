@@ -14,6 +14,11 @@ export default function Home() {
       description: "Pantau cash in dari sales dan cash out untuk biaya operasional.",
     },
     {
+      href: "/delivery-order",
+      title: "Delivery Order",
+      description: "Kelola pengiriman order berstatus paid dan tandai saat sudah diantar.",
+    },
+    {
       href: "/procurement",
       title: "Procurement",
       description: "Kelola pembelian listrik, air, pakan, ayam baru, dan kebutuhan farm.",

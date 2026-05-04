@@ -3,7 +3,7 @@ import { useMemo, useState } from "react";
 import Input from "@/components/ui/input";
 import Select from "@/components/ui/select";
 import Button from "@/components/ui/button";
-import { useOfflineStore } from "@/lib/offlineStore";
+import { nextSequenceNumber, useOfflineStore } from "@/lib/offlineStore";
 
 export default function OrderPage() {
   const addOrder = useOfflineStore((state) => state.addOrder);
@@ -17,6 +17,7 @@ export default function OrderPage() {
   const priceMasters = useOfflineStore((state) => state.priceMasters);
   const locale = useOfflineStore((state) => state.locale);
   const numberLocale = locale === "en" ? "en-US" : "id-ID";
+  const nextSoNumber = useMemo(() => nextSequenceNumber("SO", orders), [orders]);
     const serviceMethods = [
       { value: "antar", label: locale === "en" ? "Delivery" : "Antar" },
       { value: "ambil", label: locale === "en" ? "Pick Up" : "Ambil Sendiri" },
@@ -174,6 +175,15 @@ export default function OrderPage() {
 
         <form onSubmit={handleOrder} className="mt-5 space-y-3">
           <div className="space-y-1">
+            <label className="text-xs font-medium text-slate-600">{locale === "en" ? "SO Number" : "No. SO"}</label>
+            <Input
+              type="text"
+              value={nextSoNumber}
+              readOnly
+              className="w-full bg-slate-50 text-slate-700"
+            />
+          </div>
+          <div className="space-y-1">
             <label className="text-xs font-medium text-slate-600">{locale === "en" ? "Customer" : "Pelanggan"}</label>
             <Select
               options={customerOptions}
@@ -293,7 +303,6 @@ export default function OrderPage() {
           <table className="w-full text-sm">
             <thead className="border-y border-slate-200 bg-slate-50 text-left text-slate-600">
               <tr>
-                <th className="p-3">{locale === "en" ? "Order ID" : "Order ID"}</th>
                 <th className="p-3">{locale === "en" ? "SO No" : "No. SO"}</th>
                 <th className="p-3">{locale === "en" ? "Order Date" : "Tanggal Order"}</th>
                 <th className="p-3">{locale === "en" ? "Details" : "Detail"}</th>
@@ -306,13 +315,12 @@ export default function OrderPage() {
             <tbody className="text-slate-700">
               {orders.length === 0 ? (
                 <tr>
-                  <td className="p-3 text-slate-500" colSpan={8}>{locale === "en" ? "No sales orders yet." : "Belum ada pesanan sales."}</td>
+                  <td className="p-3 text-slate-500" colSpan={7}>{locale === "en" ? "No sales orders yet." : "Belum ada pesanan sales."}</td>
                 </tr>
               ) : (
                 orders.map((order) => (
                   <tr key={order.id} className="border-b border-slate-100 align-top">
-                    <td className="p-3 font-medium text-slate-900">{order.id}</td>
-                    <td className="p-3 font-medium text-slate-900">{order.so_number || "-"}</td>
+                    <td className="p-3 font-medium text-slate-900">{order.so_number || order.id}</td>
                     <td className="p-3">{order.order_date}</td>
                     <td className="p-3">
                       <div>{order.item_name}</div>

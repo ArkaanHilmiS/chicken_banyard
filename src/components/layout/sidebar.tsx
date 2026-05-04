@@ -11,6 +11,7 @@ const menuSections = [
     title: { id: "Beranda", en: "Home" },
     items: [
       { href: "/", label: { id: "Ringkasan", en: "Overview" } },
+      { href: "/guide", label: { id: "Cara Penggunaan", en: "How to Use" } },
     ],
   },
   {

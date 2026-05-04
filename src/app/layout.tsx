@@ -5,7 +5,7 @@ import Navbar from "@/components/layout/navbar";
 import Sidebar from "@/components/layout/sidebar";
 
 export const metadata = {
-  title: "Chicken Banyard ERP",
+  title: "ERP Peternakan Ayam Petelur",
   description: "ERP operasional peternakan dan penjualan telur untuk UMKM modern.",
 };
 

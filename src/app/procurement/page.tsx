@@ -4,7 +4,7 @@ import { useMemo, useState } from "react";
 import Button from "@/components/ui/button";
 import Input from "@/components/ui/input";
 import Select from "@/components/ui/select";
-import { useOfflineStore } from "@/lib/offlineStore";
+import { nextSequenceNumber, useOfflineStore } from "@/lib/offlineStore";
 import type { Purchase } from "@/types/purchase";
 
 export default function ProcurementPage() {
@@ -16,6 +16,7 @@ export default function ProcurementPage() {
   const addPurchase = useOfflineStore((state) => state.addPurchase);
   const locale = useOfflineStore((state) => state.locale);
   const numberLocale = locale === "en" ? "en-US" : "id-ID";
+  const nextPoNumber = useMemo(() => nextSequenceNumber("PO", purchases), [purchases]);
   const [vendorName, setVendorName] = useState("");
   const [itemName, setItemName] = useState("");
   const [vendorId, setVendorId] = useState("");
@@ -135,6 +136,15 @@ export default function ProcurementPage() {
           </div>
 
           <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
+            <div className="space-y-1">
+              <label className="text-xs font-medium text-slate-600">{locale === "en" ? "PO Number" : "No. PO"}</label>
+              <Input
+                type="text"
+                value={nextPoNumber}
+                readOnly
+                className="w-full bg-slate-50 text-slate-700"
+              />
+            </div>
             <div className="space-y-1">
               <label className="text-xs font-medium text-slate-600">{locale === "en" ? "Vendor" : "Vendor"}</label>
               <Select options={vendorOptions} value={vendorId} onChange={(e) => onVendorChange(e.target.value)} required className="w-full" />

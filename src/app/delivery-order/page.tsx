@@ -75,7 +75,7 @@ export default function DeliveryOrderPage() {
           <table className="w-full text-sm">
             <thead className="border-y border-slate-200 bg-slate-50 text-left text-slate-600">
               <tr>
-                <th className="p-3">{locale === "en" ? "Order ID" : "Order ID"}</th>
+                <th className="p-3">{locale === "en" ? "SO No" : "No. SO"}</th>
                 <th className="p-3">{locale === "en" ? "Item" : "Item"}</th>
                 <th className="p-3">{locale === "en" ? "Qty" : "Qty"}</th>
                 <th className="p-3">{locale === "en" ? "Schedule" : "Jadwal"}</th>
@@ -92,7 +92,7 @@ export default function DeliveryOrderPage() {
               ) : (
                 readyToDeliver.map((order) => (
                   <tr key={order.id} className="border-b border-slate-100 align-top">
-                    <td className="p-3 font-medium text-slate-900">{order.id}</td>
+                    <td className="p-3 font-medium text-slate-900">{order.so_number || order.id}</td>
                     <td className="p-3">{order.item_name}</td>
                     <td className="p-3">{order.quantity} {order.unit}</td>
                     <td className="p-3">{order.delivery_date} {order.delivery_time}</td>
@@ -126,7 +126,7 @@ export default function DeliveryOrderPage() {
           <table className="w-full text-sm">
             <thead className="border-y border-slate-200 bg-slate-50 text-left text-slate-600">
               <tr>
-                <th className="p-3">{locale === "en" ? "Order ID" : "Order ID"}</th>
+                <th className="p-3">{locale === "en" ? "SO No" : "No. SO"}</th>
                 <th className="p-3">{locale === "en" ? "Item" : "Item"}</th>
                 <th className="p-3">{locale === "en" ? "Qty" : "Qty"}</th>
                 <th className="p-3">{locale === "en" ? "Schedule" : "Jadwal"}</th>
@@ -142,7 +142,7 @@ export default function DeliveryOrderPage() {
               ) : (
                 deliveredOrders.map((order) => (
                   <tr key={order.id} className="border-b border-slate-100 align-top">
-                    <td className="p-3 font-medium text-slate-900">{order.id}</td>
+                    <td className="p-3 font-medium text-slate-900">{order.so_number || order.id}</td>
                     <td className="p-3">{order.item_name}</td>
                     <td className="p-3">{order.quantity} {order.unit}</td>
                     <td className="p-3">{order.delivery_date} {order.delivery_time}</td>

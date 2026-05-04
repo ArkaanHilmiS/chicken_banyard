@@ -29,7 +29,7 @@ const DEFAULT_EGG_MIN_STOCK = 300;
 
 const toSequenceNumber = (prefix: "SO" | "PO", value: number) => `${prefix}${String(value).padStart(10, "0")}`;
 
-const nextSequenceNumber = (prefix: "SO" | "PO", items: Array<{ so_number?: string; po_number?: string }>) => {
+export const nextSequenceNumber = (prefix: "SO" | "PO", items: Array<{ so_number?: string; po_number?: string }>) => {
   const max = items.reduce((acc, item) => {
     const raw = prefix === "SO" ? item.so_number : item.po_number;
     if (!raw || !raw.startsWith(prefix)) return acc;
@@ -302,7 +302,7 @@ export const useOfflineStore = create<OfflineStoreState>((set, get) => ({
     const soNumber = nextSequenceNumber("SO", get().orders);
 
     const newOrder: Order = {
-      id: makeId("SO"),
+      id: soNumber,
       so_number: soNumber,
       user_id: get().currentUserId ?? "USR-001",
       order_date: today(),

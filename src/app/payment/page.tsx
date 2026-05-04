@@ -99,7 +99,7 @@ export default function PaymentPage() {
         .filter((order) => order.payment_status !== "paid")
         .map((order) => ({
           value: order.id,
-          label: `${order.id} - ${order.address} - Rp ${order.total_price.toLocaleString(numberLocale)}`,
+          label: `${order.so_number || order.id} - ${order.address} - Rp ${order.total_price.toLocaleString(numberLocale)}`,
         }));
     }
 

@@ -5,6 +5,7 @@ import { useOfflineStore } from "@/lib/offlineStore";
 
 const pageLabels: Record<string, { id: string; en: string }> = {
   "/": { id: "Ringkasan", en: "Overview" },
+  "/guide": { id: "Cara Penggunaan", en: "How to Use" },
   "/dashboard": { id: "Dashboard", en: "Dashboard" },
   "/order": { id: "Sales Order", en: "Sales Order" },
   "/payment": { id: "Pembayaran", en: "Payment" },

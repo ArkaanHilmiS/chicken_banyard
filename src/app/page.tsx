@@ -7,7 +7,7 @@ export default function Home() {
   const copy = {
     id: {
       heroTag: "Integrated ERP",
-      heroTitle: "Chicken Banyard Control Tower",
+      heroTitle: "Dashboard Peternakan Ayam Petelur",
       heroDesc: "Satu sistem untuk sales, purchasing, payment, goods receipt, inventory, dan jurnal. Semua proses operasional peternakan telur terhubung dalam alur kerja yang konsisten.",
       dashboard: "Buka Dashboard",
       createOrder: "Buat Sales Order",

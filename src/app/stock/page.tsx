@@ -172,8 +172,8 @@ export default function StockPage() {
           <Select options={stockTypeOptions} value={stockType} onChange={(e) => setStockType(e.target.value as Stock["stock_type"] | "")} required className="w-full" />
         </div>
         <div className="space-y-1">
-          <label className="text-xs font-medium text-slate-600">{locale === "en" ? "Order ID" : "Order ID"}</label>
-          <Input value={orderId} onChange={(e) => setOrderId(e.target.value)} placeholder={locale === "en" ? "Order ID (optional)" : "Order ID (opsional)"} className="w-full" />
+          <label className="text-xs font-medium text-slate-600">{locale === "en" ? "SO No" : "No. SO"}</label>
+          <Input value={orderId} onChange={(e) => setOrderId(e.target.value)} placeholder={locale === "en" ? "SO No (optional)" : "No. SO (opsional)"} className="w-full" />
         </div>
         <Button type="submit">{locale === "en" ? "+ Add Stock" : "+ Tambah Stock"}</Button>
       </form>

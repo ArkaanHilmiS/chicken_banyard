@@ -43,14 +43,23 @@ export default function DashboardPage() {
       { label: "Pembelian Pending", value: `Rp ${pendingPurchasesTotal.toLocaleString(numberLocale)}`, delta: `${pendingPurchases.length} PO` },
     ];
 
-  const statusToneClass = (tone: "good" | "warn" | "neutral" | "danger") => {
+  type StatusTone = "good" | "warn" | "neutral" | "danger";
+
+  const statusToneClass = (tone: StatusTone) => {
     if (tone === "good") return "bg-emerald-100 text-emerald-800";
     if (tone === "warn") return "bg-amber-100 text-amber-800";
     if (tone === "danger") return "bg-rose-100 text-rose-800";
     return "bg-slate-100 text-slate-700";
   };
 
-  const queueRows = [
+  const queueRows: Array<{
+    id: string;
+    partner: string;
+    type: string;
+    status: string;
+    tone: StatusTone;
+    date: string;
+  }> = [
     ...orders.map((order) => {
       const statusLabel = (() => {
         if (order.order_status === "delivered") return locale === "en" ? "Delivered" : "Terkirim";
@@ -58,14 +67,14 @@ export default function DashboardPage() {
         if (order.order_status === "paid") return locale === "en" ? "Paid" : "Paid";
         return locale === "en" ? "Pending" : "Pending";
       })();
-      const tone = order.order_status === "delivered"
+      const tone: StatusTone = order.order_status === "delivered"
         ? "good"
         : order.order_status === "cancelled"
           ? "danger"
           : "warn";
 
       return {
-        id: order.so_number || order.id,
+        id: String(order.so_number || order.id),
         partner: order.address || "-",
         type: locale === "en" ? "Sales" : "Sales",
         status: statusLabel,
@@ -79,14 +88,14 @@ export default function DashboardPage() {
         if (purchase.payment_status === "partial") return locale === "en" ? "Partial" : "Parsial";
         return locale === "en" ? "Pending" : "Pending";
       })();
-      const tone = purchase.payment_status === "paid"
+      const tone: StatusTone = purchase.payment_status === "paid"
         ? "good"
         : purchase.payment_status === "partial"
           ? "warn"
           : "neutral";
 
       return {
-        id: purchase.po_number || purchase.id,
+        id: String(purchase.po_number || purchase.id),
         partner: purchase.vendor_name || "-",
         type: locale === "en" ? "Purchase" : "Purchase",
         status: statusLabel,
@@ -100,14 +109,14 @@ export default function DashboardPage() {
         if (receipt.condition === "partial") return locale === "en" ? "Partial" : "Parsial";
         return locale === "en" ? "Good" : "Baik";
       })();
-      const tone = receipt.condition === "damaged"
+      const tone: StatusTone = receipt.condition === "damaged"
         ? "danger"
         : receipt.condition === "partial"
           ? "warn"
           : "good";
 
       return {
-        id: receipt.id,
+        id: String(receipt.id),
         partner: receipt.vendor_name || "-",
         type: locale === "en" ? "Goods Receipt" : "Goods Receipt",
         status: statusLabel,
